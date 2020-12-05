@@ -137,3 +137,6 @@ dmypy.json
 
 # profiling data
 .prof
+
+# Option
+.idea
