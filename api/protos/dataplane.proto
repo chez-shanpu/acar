@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package acar;
+
+option go_package = "github.com/chez-shanpu/acar/api";
+
+import "types/result.proto";
+
+service DataPlane{
+  rpc ApplySRPolicy(SRInfo) returns (types.Result);
+}
+
+message SRInfo {
+  string src_addr = 1;
+  string dst_addr = 2;
+  repeated string sid_list = 3;
+}
+

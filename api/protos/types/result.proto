@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+option go_package = "github.com/chez-shanpu/acar/api/types";
+
+package acar.types;
+
+message Result {
+  bool ok = 1;
+  string err_str = 2;
+}
