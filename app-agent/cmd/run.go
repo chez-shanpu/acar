@@ -20,13 +20,20 @@ var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "run app-agent",
 	Run: func(cmd *cobra.Command, args []string) {
-		list, err := makeSIDList()
+		srcAddr := viper.GetString("app-agent.run.src-addr")
+		dstAddr := viper.GetString("app-agent.run.dst-addr")
+		topologyFilePath := viper.GetString("app-agent.run.topology-file")
+		list, err := makeSIDList(srcAddr, dstAddr, topologyFilePath)
 		if err != nil {
 			fmt.Printf("[ERROR] %v", err)
 			os.Exit(1)
 		}
 
-		err = sendSRInfoToControlPlane(list)
+		tls := viper.GetBool("app-agent.run.tls")
+		caFilePath := viper.GetString("app-agent.run.dp-cert-path")
+		cpAddr := viper.GetString("app-agent.run.cp-addr")
+		appName := viper.GetString("app-agent.run.app-name")
+		err = sendSRInfoToControlPlane(list, tls, caFilePath, cpAddr, appName, srcAddr, dstAddr)
 		if err != nil {
 			fmt.Printf("[ERROR] %v", err)
 			os.Exit(1)
@@ -63,13 +70,10 @@ func init() {
 	_ = runCmd.MarkFlagRequired("dst-addr")
 }
 
-func makeSIDList() (*[]string, error) {
-	srcAddr := viper.GetString("app-agent.run.src-addr")
-	dstAddr := viper.GetString("app-agent.run.dst-addr")
+func makeSIDList(srcAddr, dstAddr, topologyFilePath string) (*[]string, error) {
 
 	// TODO implement making graph function (Currently, it's temporarily reading from a file.)
-	topologyFile := viper.GetString("app-agent.run.topology-file")
-	graph, err := dijkstra.Import(topologyFile)
+	graph, err := dijkstra.Import(topologyFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to import graph from file : %v", err)
 	}
@@ -98,15 +102,13 @@ func makeSIDList() (*[]string, error) {
 	return &sids, nil
 }
 
-func sendSRInfoToControlPlane(sidList *[]string) error {
+func sendSRInfoToControlPlane(sidList *[]string, tls bool, caFilePath, cpAddr, appName, srcAddr, dstAddr string) error {
 	var opts []grpc.DialOption
-	tls := viper.GetBool("app-agent.run.tls")
 	if tls {
-		caFile := viper.GetString("app-agent.run.dp-cert-path")
-		if caFile == "" {
+		if caFilePath == "" {
 			return fmt.Errorf("dp-cert file path is not set")
 		}
-		creds, err := credentials.NewClientTLSFromFile(caFile, "")
+		creds, err := credentials.NewClientTLSFromFile(caFilePath, "")
 		if err != nil {
 			return fmt.Errorf("failed to create TLS credentials %v", err)
 		}
@@ -114,7 +116,6 @@ func sendSRInfoToControlPlane(sidList *[]string) error {
 	} else {
 		opts = append(opts, grpc.WithInsecure())
 	}
-	cpAddr := viper.GetString("app-agent.run.cp-addr")
 	opts = append(opts, grpc.WithBlock())
 	conn, err := grpc.Dial(cpAddr, opts...)
 	if err != nil {
@@ -127,9 +128,6 @@ func sendSRInfoToControlPlane(sidList *[]string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	appName := viper.GetString("app-agent.run.app-name")
-	srcAddr := viper.GetString("app-agent.run.src-addr")
-	dstAddr := viper.GetString("app-agent.run.dst-addr")
 	_, err = c.RegisterSRPolicy(ctx, &api.AppInfo{
 		AppName: appName,
 		SrcAddr: srcAddr,
