@@ -22,16 +22,16 @@ func Test_makeSIDList(t *testing.T) {
 			args: args{
 				srcAddr:          "fd00:0:0:1::1",
 				dstAddr:          "fd00:0:0:5::1",
-				topologyFilePath: "./app-agent/testdata/test1.txt",
+				topologyFilePath: "../testdata/test1.txt",
 			},
-			want:    &[]string{"fd00:0:0:1::1", "fd00:0:0:2::1", "fd00:0:0:5::1"},
+			want:    &[]string{"fd00:0:0:1::1", "fd00:0:0:3::1", "fd00:0:0:2::1", "fd00:0:0:5::1"},
 			wantErr: false,
 		}, {
 			name: "empty source address",
 			args: args{
 				srcAddr:          "",
 				dstAddr:          "fd00:0:0:5::1",
-				topologyFilePath: "./app-agent/testdata/test1.txt",
+				topologyFilePath: "../testdata/test1.txt",
 			},
 			want:    nil,
 			wantErr: true,
@@ -40,7 +40,7 @@ func Test_makeSIDList(t *testing.T) {
 			args: args{
 				srcAddr:          "fd00:0:0:1::1",
 				dstAddr:          "",
-				topologyFilePath: "./app-agent/testdata/test1.txt",
+				topologyFilePath: "../testdata/test1.txt",
 			},
 			want:    nil,
 			wantErr: true,
@@ -49,7 +49,7 @@ func Test_makeSIDList(t *testing.T) {
 			args: args{
 				srcAddr:          "fd00:0:0:1::2",
 				dstAddr:          "fd00:0:0:1::5",
-				topologyFilePath: "./app-agent/testdata/test1.txt",
+				topologyFilePath: "../testdata/test1.txt",
 			},
 			want:    nil,
 			wantErr: true,
@@ -58,7 +58,7 @@ func Test_makeSIDList(t *testing.T) {
 			args: args{
 				srcAddr:          "fd00:0:0:2::1",
 				dstAddr:          "fd00:0:0:1::5",
-				topologyFilePath: "./app-agent/testdata/test1.txt",
+				topologyFilePath: "../testdata/test1.txt",
 			},
 			want:    nil,
 			wantErr: true,
@@ -67,7 +67,7 @@ func Test_makeSIDList(t *testing.T) {
 			args: args{
 				srcAddr:          "fd00:0:0:1::1",
 				dstAddr:          "fd00:0:0:2::5",
-				topologyFilePath: "./app-agent/testdata/test1.txt",
+				topologyFilePath: "../testdata/test1.txt",
 			},
 			want:    nil,
 			wantErr: true,
