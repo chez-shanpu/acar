@@ -1,7 +1,7 @@
 package main
 
-import "github.com/chez-shanpu/acar/dataplane/app"
+import "github.com/chez-shanpu/acar/dataplane/cmd"
 
 func main() {
-	app.Execute()
+	cmd.Execute()
 }
