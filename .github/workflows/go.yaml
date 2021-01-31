@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         go-version: [ 1.15.x ]
-        platform: [ ubuntu-latest ]
+        platform: [ ubuntu-20.04, ubuntu-18.04 ]
     runs-on: ${{ matrix.platform }}
     steps:
     - name: Install Go
@@ -30,7 +30,7 @@ jobs:
     - name: go vet
       run: go vet ./...
     - name: go test
-      run: go test ./... -race -v
+      run: sudo go test ./... -race -v
     - name: Check go.mod and go.sum is up-to-date
       run: |
         go mod tidy
