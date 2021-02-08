@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package acar;
+
+option go_package = "github.com/chez-shanpu/acar/api";
+
+import "types/result.proto";
+
+service MonitoringServer{
+  rpc GetNodes(GetNodesParams) returns(Nodes);
+  rpc RegisterNodes(Nodes) returns(types.Result);
+}
+
+message GetNodesParams{}
+
+message Nodes{
+  repeated Node node = 1;
+}
+
+message Node {
+  string SID = 1;
+  repeated LinkCost link_costs = 2;
+}
+
+message LinkCost {
+  map<string, string> next_sid = 1;
+  map<string, double> cost = 2;
+}
