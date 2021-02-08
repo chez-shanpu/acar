@@ -162,7 +162,15 @@ func Test_makeGraph(t *testing.T) {
 				t.Errorf("makeGraph() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
+			if got == nil {
+				if tt.want == nil {
+					return
+				} else if tt.want != nil {
+					t.Errorf("makeGraph() got = %v, want %v", got, tt.want)
+				}
+			}
+
+			if !reflect.DeepEqual(got.Verticies, tt.want.Verticies) {
 				t.Errorf("makeGraph() got = %v, want %v", got, tt.want)
 			}
 		})
