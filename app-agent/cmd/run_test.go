@@ -138,6 +138,15 @@ func Test_makeGraph(t *testing.T) {
 									Cost:    3,
 								},
 							},
+						}, {
+							SID:       "fd00:0:0:3::1",
+							LinkCosts: nil,
+						}, {
+							SID:       "fd00:0:0:4::1",
+							LinkCosts: nil,
+						}, {
+							SID:       "fd00:0:0:5::1",
+							LinkCosts: nil,
 						},
 					},
 				},
