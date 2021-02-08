@@ -62,8 +62,8 @@ func init() {
 
 	// flags
 	flags := runCmd.Flags()
-	flags.StringP("cp-addr", "a", "localhost", "controlplane server address")
-	flags.StringP("mnt-addr", "a", "localhost", "monitoring server address")
+	flags.StringP("cp-addr", "", "localhost", "controlplane server address")
+	flags.StringP("mnt-addr", "", "localhost", "monitoring server address")
 	flags.BoolP("cp-tls", "", false, "controlplane server tls flag")
 	flags.BoolP("mnt-tls", "", false, "monitoring server tls flag")
 	flags.String("cp-cert-path", "", "path to controlplane server cert file (this option is enabled when tls flag is true)")
