@@ -3,6 +3,8 @@ package cmd
 import (
 	"reflect"
 	"testing"
+
+	"github.com/RyanCarrier/dijkstra"
 )
 
 func Test_makeSIDList(t *testing.T) {
@@ -75,7 +77,12 @@ func Test_makeSIDList(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := makeSIDList(tt.args.srcAddr, tt.args.dstAddr, tt.args.topologyFilePath)
+			graph, err := dijkstra.Import(tt.args.topologyFilePath)
+			if err != nil {
+				t.Errorf("failed to import graph from file : %v", err)
+				return
+			}
+			got, err := makeSIDList(&graph, tt.args.srcAddr, tt.args.dstAddr, tt.args.topologyFilePath)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("makeSIDList() error = %v, wantErr %v", err, tt.wantErr)
 				return
