@@ -19,8 +19,8 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MonitoringServerClient interface {
-	GetNodes(ctx context.Context, in *GetNodesParams, opts ...grpc.CallOption) (*Nodes, error)
-	RegisterNodes(ctx context.Context, in *Nodes, opts ...grpc.CallOption) (*types.Result, error)
+	GetNodes(ctx context.Context, in *GetNodesParams, opts ...grpc.CallOption) (*NodesInfo, error)
+	RegisterNodes(ctx context.Context, in *NodesInfo, opts ...grpc.CallOption) (*types.Result, error)
 }
 
 type monitoringServerClient struct {
@@ -31,8 +31,8 @@ func NewMonitoringServerClient(cc grpc.ClientConnInterface) MonitoringServerClie
 	return &monitoringServerClient{cc}
 }
 
-func (c *monitoringServerClient) GetNodes(ctx context.Context, in *GetNodesParams, opts ...grpc.CallOption) (*Nodes, error) {
-	out := new(Nodes)
+func (c *monitoringServerClient) GetNodes(ctx context.Context, in *GetNodesParams, opts ...grpc.CallOption) (*NodesInfo, error) {
+	out := new(NodesInfo)
 	err := c.cc.Invoke(ctx, "/acar.MonitoringServer/GetNodes", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -40,7 +40,7 @@ func (c *monitoringServerClient) GetNodes(ctx context.Context, in *GetNodesParam
 	return out, nil
 }
 
-func (c *monitoringServerClient) RegisterNodes(ctx context.Context, in *Nodes, opts ...grpc.CallOption) (*types.Result, error) {
+func (c *monitoringServerClient) RegisterNodes(ctx context.Context, in *NodesInfo, opts ...grpc.CallOption) (*types.Result, error) {
 	out := new(types.Result)
 	err := c.cc.Invoke(ctx, "/acar.MonitoringServer/RegisterNodes", in, out, opts...)
 	if err != nil {
@@ -53,8 +53,8 @@ func (c *monitoringServerClient) RegisterNodes(ctx context.Context, in *Nodes, o
 // All implementations must embed UnimplementedMonitoringServerServer
 // for forward compatibility
 type MonitoringServerServer interface {
-	GetNodes(context.Context, *GetNodesParams) (*Nodes, error)
-	RegisterNodes(context.Context, *Nodes) (*types.Result, error)
+	GetNodes(context.Context, *GetNodesParams) (*NodesInfo, error)
+	RegisterNodes(context.Context, *NodesInfo) (*types.Result, error)
 	mustEmbedUnimplementedMonitoringServerServer()
 }
 
@@ -62,10 +62,10 @@ type MonitoringServerServer interface {
 type UnimplementedMonitoringServerServer struct {
 }
 
-func (UnimplementedMonitoringServerServer) GetNodes(context.Context, *GetNodesParams) (*Nodes, error) {
+func (UnimplementedMonitoringServerServer) GetNodes(context.Context, *GetNodesParams) (*NodesInfo, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetNodes not implemented")
 }
-func (UnimplementedMonitoringServerServer) RegisterNodes(context.Context, *Nodes) (*types.Result, error) {
+func (UnimplementedMonitoringServerServer) RegisterNodes(context.Context, *NodesInfo) (*types.Result, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RegisterNodes not implemented")
 }
 func (UnimplementedMonitoringServerServer) mustEmbedUnimplementedMonitoringServerServer() {}
@@ -100,7 +100,7 @@ func _MonitoringServer_GetNodes_Handler(srv interface{}, ctx context.Context, de
 }
 
 func _MonitoringServer_RegisterNodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Nodes)
+	in := new(NodesInfo)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func _MonitoringServer_RegisterNodes_Handler(srv interface{}, ctx context.Contex
 		FullMethod: "/acar.MonitoringServer/RegisterNodes",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MonitoringServerServer).RegisterNodes(ctx, req.(*Nodes))
+		return srv.(MonitoringServerServer).RegisterNodes(ctx, req.(*NodesInfo))
 	}
 	return interceptor(ctx, in, info, handler)
 }
