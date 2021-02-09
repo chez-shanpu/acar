@@ -7,14 +7,14 @@ option go_package = "github.com/chez-shanpu/acar/api";
 import "types/result.proto";
 
 service MonitoringServer{
-  rpc GetNodes(GetNodesParams) returns(Nodes);
-  rpc RegisterNodes(Nodes) returns(types.Result);
+  rpc GetNodes(GetNodesParams) returns(NodesInfo);
+  rpc RegisterNodes(NodesInfo) returns(types.Result);
 }
 
 message GetNodesParams{}
 
-message Nodes{
-  repeated Node node = 1;
+message NodesInfo{
+  repeated Node nodes = 1;
 }
 
 message Node {
@@ -23,6 +23,6 @@ message Node {
 }
 
 message LinkCost {
-  map<string, string> next_sid = 1;
-  map<string, double> cost = 2;
+  string next_sid = 1;
+  double cost = 2;
 }
