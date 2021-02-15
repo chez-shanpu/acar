@@ -156,6 +156,9 @@ func calcInterfaceUsagePercent(firstBytes, secondBytes int64, firstTime, secondT
 	traficBytesDiff := secondBytes - firstBytes
 	timeDiff := secondTime - firstTime
 	ifUsagePercent := float64(traficBytesDiff) / (float64(timeDiff) * float64(linkCapBits)) * BytesToBits * 100.0
+	if ifUsagePercent < 0 {
+		ifUsagePercent = 0
+	}
 	return ifUsagePercent
 }
 
