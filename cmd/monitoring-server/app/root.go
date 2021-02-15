@@ -1,4 +1,4 @@
-package cmd
+package app
 
 import (
 	"fmt"
@@ -9,8 +9,8 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "dataplane",
-	Short: "acar dataplane server",
+	Use:   "monitoring-server",
+	Short: "acar monitoring server",
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

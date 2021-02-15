@@ -1,8 +1,4 @@
-/*
-Copyright © 2021 NAME HERE <EMAIL ADDRESS>
-
-*/
-package cmd
+package app
 
 import (
 	"fmt"
