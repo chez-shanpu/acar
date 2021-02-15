@@ -152,6 +152,13 @@ func getInterfaceUsageBytes(snmp *gosnmp.GoSNMP, ifIndex int) (int64, error) {
 	return totalBytes.Int64(), nil
 }
 
+func calcInterfaceUsagePercent(firstBytes, secondBytes int64, firstTime, secondTime int, linkCapBits int64) float64 {
+	traficBytesDiff := secondBytes - firstBytes
+	timeDiff := secondTime - firstTime
+	ifUsagePercent := float64(traficBytesDiff) / (float64(timeDiff) * float64(linkCapBits)) * BytesToBits * 100.0
+	return ifUsagePercent
+}
+
 func getInterfaceUsagePercentBySNMP(snmp *gosnmp.GoSNMP, ifIndex, secInterval int) (float64, error) {
 	linkCapBits, err := getInterfaceCapacity(snmp, ifIndex)
 	if err != nil {
@@ -175,9 +182,7 @@ func getInterfaceUsagePercentBySNMP(snmp *gosnmp.GoSNMP, ifIndex, secInterval in
 	secondGetTime := time.Now()
 
 	// calcurate
-	traficBytesDiff := secondUsageBytesMetric - firstUsageBytesMetric
-	timeDiff := secondGetTime.Second() - firstGetTime.Second()
-	ifUsagePercent := float64(traficBytesDiff) / (float64(timeDiff) * float64(linkCapBits)) * BytesToBits * 100.0
+	ifUsagePercent := calcInterfaceUsagePercent(firstUsageBytesMetric, secondUsageBytesMetric, firstGetTime.Second(), secondGetTime.Second(), linkCapBits)
 
 	return ifUsagePercent, nil
 }
