@@ -7,16 +7,10 @@ package app
 import (
 	"context"
 	"fmt"
-	"io"
-	"log"
-	"math/big"
 	"os"
-	"sync"
 	"time"
 
-	"golang.org/x/sync/errgroup"
-
-	"google.golang.org/grpc/grpclog"
+	"github.com/chez-shanpu/acar/pkg/srnode"
 
 	"github.com/spf13/viper"
 
@@ -28,21 +22,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const BytesToBits = 8.0
-const ifHighSpeedOID = "1.3.6.1.2.1.31.1.1.1.15"
-const ifHCInOctetsOID = "1.3.6.1.2.1.31.1.1.1.6"
-const ifHCOutOctetsOID = "1.3.6.1.2.1.31.1.1.1.10"
-const ifNumberOID = "1.3.6.1.2.1.2.1.0"
-const ifDescrOID = "1.3.6.1.2.1.2.2.1.2"
-
 type config struct {
-	networkInterfaces []NetworkInterface
-}
-
-type NetworkInterface struct {
-	Sid           string
-	NextSid       string
-	InterfaceName string
+	networkInterfaces []*srnode.NetworkInterface
 }
 
 // runCmd represents the run command
@@ -50,15 +31,8 @@ var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "run SRNode Agent",
 	Run: func(cmd *cobra.Command, args []string) {
+		// config
 		var c config
-		var nodes []*api.Node
-		var mutex = &sync.Mutex{}
-		var eg errgroup.Group
-
-		// logger
-		l := grpclog.NewLoggerV2(os.Stdout, io.MultiWriter(os.Stdout, os.Stderr), os.Stderr)
-		grpclog.SetLoggerV2(l)
-
 		_ = viper.Unmarshal(&c)
 
 		srnodeAddr := viper.GetString("srnode-agent.run.srnode-addr")
@@ -67,46 +41,19 @@ var runCmd = &cobra.Command{
 		snmpAuthPass := viper.GetString("srnode-agent.run.snmp-auth-pass")
 		snmpPrivPass := viper.GetString("srnode-agent.run.snmp-priv-pass")
 		sc := newSNMPClient(srnodeAddr, srnodePort, snmpUser, snmpAuthPass, snmpPrivPass)
-
 		interval := viper.GetInt("srnode-agent.run.interval")
-		for _, ni := range c.networkInterfaces {
-			ni := ni
-			eg.Go(func() error {
-				return func(ni NetworkInterface) error {
-					ifIndex, err := getInterfaceIndexByName(sc, ni.InterfaceName)
-					if err != nil {
-						l.Errorf("failed to get interface index: %v", ifIndex)
-					}
-					usage, err := getInterfaceUsagePercentBySNMP(sc, ifIndex, interval)
-					if err != nil {
-						l.Errorf("failed to get interface usage: %v", err)
-					}
-					node := api.Node{
-						SID: ni.Sid,
-						LinkCosts: []*api.LinkCost{
-							{
-								NextSid: ni.NextSid,
-								Cost:    usage,
-							},
-						},
-					}
-					mutex.Lock()
-					nodes = append(nodes, &node)
-					mutex.Unlock()
-					return nil
-				}(ni)
-			})
+		nodes, err := srnode.GatherMetricsBySNMP(c.networkInterfaces, sc, interval)
+		if err != nil {
+			fmt.Printf("failed to send metrics to monitoring server: %v", err)
+			os.Exit(1)
 		}
 
 		// The link cost to different SIDs in the same host is 0
 		for _, n := range nodes {
 			for _, ni := range c.networkInterfaces {
 				if n.SID != ni.Sid {
-					lc := api.LinkCost{
-						NextSid: ni.Sid,
-						Cost:    0,
-					}
-					n.LinkCosts = append(n.LinkCosts, &lc)
+					lc := srnode.NewLinkCost(ni.Sid, 0)
+					n.LinkCosts = append(n.LinkCosts, lc)
 				}
 			}
 		}
@@ -114,10 +61,10 @@ var runCmd = &cobra.Command{
 		tls := viper.GetBool("srnode-agent.run.tls")
 		certFilePath := viper.GetString("srnode-agent.run.cert-path")
 		mntAddr := viper.GetString("srnode-agent.run.mnt-addr")
-		err := sendToMonitoringServer(tls, certFilePath, mntAddr, &api.NodesInfo{Nodes: nodes})
+		err = sendToMonitoringServer(tls, certFilePath, mntAddr, &api.NodesInfo{Nodes: nodes})
 		if err != nil {
-			l.Errorf("failed to send metrics to monitoring server: %v", err)
-			os.Exit(-1)
+			fmt.Printf("failed to send metrics to monitoring server: %v", err)
+			os.Exit(1)
 		}
 	},
 }
@@ -177,104 +124,6 @@ func newSNMPClient(addr string, port uint16, user, authPass, privPass string) *g
 	}
 }
 
-func getInterfaceIndexByName(snmp *gosnmp.GoSNMP, ifName string) (int, error) {
-	oids := []string{ifNumberOID}
-	res, err := snmp.Get(oids)
-	if err != nil {
-		return -1, fmt.Errorf("failed get interface number from snmp agent: %v", err)
-	}
-
-	var maxIfIndex int
-	for _, variable := range res.Variables {
-		if variable.Type != gosnmp.Integer {
-			return -1, fmt.Errorf("variable type is wrong: %v", variable.Type)
-		}
-		maxIfIndex = int(gosnmp.ToBigInt(variable.Value).Int64())
-	}
-
-	for i := 1; i <= maxIfIndex; i++ {
-		oids = []string{fmt.Sprintf("%s.%d", ifDescrOID, i)}
-		res, err = snmp.Get(oids)
-		if err != nil {
-			return -1, fmt.Errorf("failed get interface name from snmp agent: %v", err)
-		}
-
-		for _, variable := range res.Variables {
-			if variable.Type != gosnmp.OctetString {
-				return -1, fmt.Errorf("variable type is wrong: %v", variable.Type)
-			}
-			if variable.Value == ifName {
-				return i, nil
-			}
-		}
-	}
-	return -1, fmt.Errorf("no interface named %s", ifName)
-}
-
-func getInterfaceUsageBytes(snmp *gosnmp.GoSNMP, ifIndex int) (int64, error) {
-	oids := []string{fmt.Sprintf("%s.%d", ifHCInOctetsOID, ifIndex), fmt.Sprintf("%s.%d", ifHCOutOctetsOID, ifIndex)}
-	res, err := snmp.Get(oids)
-	if err != nil {
-		return -1, fmt.Errorf("failed get metrics from snmp agent: %v", err)
-	}
-
-	totalBytes := big.NewInt(0)
-	for _, variable := range res.Variables {
-		if variable.Type != gosnmp.Counter64 {
-			return -1, fmt.Errorf("variable type is wrong: %v", variable.Type)
-		}
-		totalBytes.Add(totalBytes, gosnmp.ToBigInt(variable.Value))
-	}
-	return totalBytes.Int64(), nil
-}
-
-func getInterfaceUsagePercentBySNMP(snmp *gosnmp.GoSNMP, ifIndex, secInterval int) (float64, error) {
-	err := snmp.Connect()
-	if err != nil {
-		log.Fatalf("Connect() err: %v", err)
-	}
-	defer snmp.Conn.Close()
-
-	// get link cap
-	oids := []string{fmt.Sprintf("%s.%d", ifHighSpeedOID, ifIndex)}
-	res, err := snmp.Get(oids)
-	if err != nil {
-		return -1, fmt.Errorf("failed get metrics from snmp agent: %v", err)
-	}
-
-	var linkCapBits int64
-	for _, variable := range res.Variables {
-		if variable.Type != gosnmp.Gauge32 {
-			return -1, fmt.Errorf("variable type is wrong: %v", variable.Type)
-		}
-		linkCapBits = gosnmp.ToBigInt(variable.Value).Int64()
-	}
-
-	// first
-	firstUsageBytesMetric, err := getInterfaceUsageBytes(snmp, ifIndex)
-	if err != nil {
-		return -1, err
-	}
-	firstGetTime := time.Now()
-
-	// wait
-	time.Sleep(time.Duration(secInterval) * time.Second)
-
-	// second
-	secondUsageBytesMetric, err := getInterfaceUsageBytes(snmp, ifIndex)
-	if err != nil {
-		return -1, err
-	}
-	secondGetTime := time.Now()
-
-	// calcurate
-	traficBytesDiff := secondUsageBytesMetric - firstUsageBytesMetric
-	timeDiff := secondGetTime.Second() - firstGetTime.Second()
-	ifUsagePercent := float64(traficBytesDiff) / (float64(timeDiff) * float64(linkCapBits)) * BytesToBits * 100.0
-
-	return ifUsagePercent, nil
-}
-
 func sendToMonitoringServer(tls bool, certFilePath, mntAddr string, nodes *api.NodesInfo) error {
 	var opts []grpc.DialOption
 	if tls {
@@ -292,13 +141,18 @@ func sendToMonitoringServer(tls bool, certFilePath, mntAddr string, nodes *api.N
 	opts = append(opts, grpc.WithBlock())
 	conn, err := grpc.Dial(mntAddr, opts...)
 	if err != nil {
-		return fmt.Errorf("did not connect: %v", err)
+		return fmt.Errorf("cannnot connect to monitoring-server: %v", err)
 	}
-	defer conn.Close()
+	defer func() {
+		err := conn.Close()
+		if err != nil {
+			fmt.Printf("failed to close connection with monitoring-server: %v", err)
+		}
+	}()
 
 	c := api.NewMonitoringServerClient(conn)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	res, err := c.RegisterNodes(ctx, nodes)
