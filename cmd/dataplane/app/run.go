@@ -7,6 +7,8 @@ import (
 	"net"
 	"os"
 
+	"github.com/chez-shanpu/acar/pkg/utils"
+
 	"github.com/chez-shanpu/acar/api"
 	"github.com/chez-shanpu/acar/api/types"
 	"github.com/spf13/cobra"
@@ -26,12 +28,18 @@ type dataplaneServer struct {
 // runCmd represents the run command
 var runCmd = &cobra.Command{
 	Use:   "run",
-	Short: "Run dataplane grpc server",
+	Short: "Run dataplane server",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// logger
 		l := grpclog.NewLoggerV2(os.Stdout, io.MultiWriter(os.Stdout, os.Stderr), os.Stderr)
 		grpclog.SetLoggerV2(l)
-		err := runServer()
+
+		serverAddr := viper.GetString("dataplane.run.addr")
+		tls := viper.GetBool("dataplane.run.tls")
+		certFile := viper.GetString("dataplane.run.cert-path")
+		keyFile := viper.GetString("dataplane.run.key-path")
+		devName := viper.GetString("dataplane.run.device")
+		err := runServer(serverAddr, tls, certFile, keyFile, devName)
 		return err
 	},
 }
@@ -66,19 +74,15 @@ func newServer(devName string) *dataplaneServer {
 	return s
 }
 
-func runServer() error {
-	serverAddr := viper.GetString("dataplane.run.addr")
+func runServer(serverAddr string, tls bool, certFile, keyFile, dev string) error {
 	lis, err := net.Listen("tcp", serverAddr)
 	if err != nil {
 		grpclog.Errorf("failed to listen: %v", err)
 		return err
 	}
-	var opts []grpc.ServerOption
 
-	tls := viper.GetBool("dataplane.run.tls")
+	var opts []grpc.ServerOption
 	if tls {
-		certFile := viper.GetString("dataplane.run.cert-path")
-		keyFile := viper.GetString("dataplane.run.key-path")
 		if certFile == "" || keyFile == "" {
 			grpclog.Error("cert file path or key file path is not set")
 			return err
@@ -92,7 +96,7 @@ func runServer() error {
 	}
 
 	grpcServer := grpc.NewServer(opts...)
-	api.RegisterDataPlaneServer(grpcServer, newServer(viper.GetString("dataplane.run.device")))
+	api.RegisterDataPlaneServer(grpcServer, newServer(dev))
 	grpclog.Infof("server start: listen [%s]", serverAddr)
 	if err := grpcServer.Serve(lis); err != nil {
 		grpclog.Errorf("grpcServer.Serve(): %v", err)
@@ -112,20 +116,14 @@ func (s *dataplaneServer) ApplySRPolicy(ctx context.Context, si *api.SRInfo) (*t
 
 	srcIPv6Flag, err := isIPV6(si.SrcAddr)
 	if err != nil {
-		grpclog.Error("src address is wrong format")
-		return &types.Result{
-			Ok:     false,
-			ErrStr: "src address is wrong format",
-		}, errors.New("src address is wrong format")
+		grpclog.Errorf("src address is wrong format: %v", err)
+		return utils.NewResult(false, "src address is wrong format"), errors.New("src address is wrong format")
 	}
 
 	dstIPv6Flag, err := isIPV6(si.DstAddr)
 	if err != nil {
 		grpclog.Error("dst address is wrong format")
-		return &types.Result{
-			Ok:     false,
-			ErrStr: "dst address is wrong format",
-		}, errors.New("dst address is wrong format")
+		return utils.NewResult(false, "dst address is wrong format"), errors.New("dst address is wrong format")
 	}
 
 	if srcIPv6Flag != dstIPv6Flag {
@@ -139,16 +137,13 @@ func (s *dataplaneServer) ApplySRPolicy(ctx context.Context, si *api.SRInfo) (*t
 	dstIP, dstIPnet, err := net.ParseCIDR(si.DstAddr)
 	if err != nil {
 		grpclog.Errorf("ApplySRPolicy ParseCIDR error: %v", err)
-		return &types.Result{
-			Ok:     false,
-			ErrStr: err.Error(),
-		}, err
+		return utils.NewResult(false, err.Error()), err
 	}
 
 	li, err := netlink.LinkByName(s.devName)
 	if err != nil {
-		grpclog.Errorf("ApplySRPolicy LinkByName error: %v", err)
-		return nil, err
+		grpclog.Errorf("failed to get Link by dev name %s: %v", s.devName, err)
+		return utils.NewResult(false, "failed to get Link"), err
 	}
 
 	route := netlink.Route{
@@ -159,18 +154,11 @@ func (s *dataplaneServer) ApplySRPolicy(ctx context.Context, si *api.SRInfo) (*t
 		},
 		Encap: seg6encap,
 	}
-
-	if err := netlink.RouteAdd(&route); err != nil {
-		grpclog.Errorf("ApplySRPolicy RouteAdd error: %v", err)
-		return &types.Result{
-			Ok:     false,
-			ErrStr: err.Error(),
-		}, err
+	if err = netlink.RouteAdd(&route); err != nil {
+		grpclog.Errorf("failed to add route: %v", err)
+		return utils.NewResult(false, err.Error()), err
 	}
-	return &types.Result{
-		Ok:     true,
-		ErrStr: "",
-	}, nil
+	return utils.NewResult(true, ""), nil
 }
 
 func isIPV6(addr string) (bool, error) {
