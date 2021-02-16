@@ -1,4 +1,4 @@
-package app
+package appagent
 
 import (
 	"reflect"
@@ -84,7 +84,7 @@ func Test_makeSIDList(t *testing.T) {
 				t.Errorf("failed to import graph from file : %v", err)
 				return
 			}
-			got, err := makeSIDList(&graph, tt.args.srcAddr, tt.args.dstAddr, tt.args.topologyFilePath)
+			got, err := MakeSIDList(&graph, tt.args.srcAddr, tt.args.dstAddr)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("makeSIDList() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -157,7 +157,7 @@ func Test_makeGraph(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := makeGraph(tt.args.nodesInfo)
+			got, err := MakeGraph(tt.args.nodesInfo)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("makeGraph() error = %v, wantErr %v", err, tt.wantErr)
 				return

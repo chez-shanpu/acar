@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/chez-shanpu/acar/cmd/app-agent/app"
+	"github.com/chez-shanpu/acar/cmd/appagent/app"
 )
 
 func main() {
