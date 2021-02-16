@@ -46,8 +46,7 @@ func Test_dataplaneServer_ApplySRPolicy(t *testing.T) {
 				},
 			},
 			want: &types.Result{
-				Ok:     true,
-				ErrStr: "",
+				Ok: true,
 			},
 			wantErr: false,
 		}, {
@@ -65,8 +64,7 @@ func Test_dataplaneServer_ApplySRPolicy(t *testing.T) {
 				},
 			},
 			want: &types.Result{
-				Ok:     true,
-				ErrStr: "",
+				Ok: true,
 			},
 			wantErr: false,
 		}, {
@@ -84,8 +82,7 @@ func Test_dataplaneServer_ApplySRPolicy(t *testing.T) {
 				},
 			},
 			want: &types.Result{
-				Ok:     false,
-				ErrStr: "",
+				Ok: false,
 			},
 			wantErr: true,
 		}, {
@@ -103,8 +100,7 @@ func Test_dataplaneServer_ApplySRPolicy(t *testing.T) {
 				},
 			},
 			want: &types.Result{
-				Ok:     false,
-				ErrStr: "",
+				Ok: false,
 			},
 			wantErr: true,
 		}, {

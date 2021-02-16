@@ -6,5 +6,4 @@ package acar.types;
 
 message Result {
   bool ok = 1;
-  string err_str = 2;
 }
