@@ -129,8 +129,7 @@ func (s *dataplaneServer) ApplySRPolicy(ctx context.Context, si *api.SRInfo) (*t
 	if srcIPv6Flag != dstIPv6Flag {
 		grpclog.Error("src address and dst address are different format")
 		return &types.Result{
-			Ok:     false,
-			ErrStr: "src address and dst address are different format",
+			Ok: false,
 		}, errors.New("src address and dst address are different format")
 	}
 

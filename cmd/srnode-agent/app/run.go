@@ -155,12 +155,9 @@ func sendToMonitoringServer(tls bool, certFilePath, mntAddr string, nodes *api.N
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	res, err := c.RegisterNodes(ctx, nodes)
+	_, err = c.RegisterNodes(ctx, nodes)
 	if err != nil {
 		return fmt.Errorf("failed to send metrics: %v", err)
-	}
-	if !res.Ok {
-		return fmt.Errorf("failed to send metrics: %v", res.ErrStr)
 	}
 	return nil
 }

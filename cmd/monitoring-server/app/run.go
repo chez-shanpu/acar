@@ -174,5 +174,5 @@ func (s *monitoringServer) RegisterNodes(ctx context.Context, ni *api.NodesInfo)
 			}
 		}
 	}
-	return &types.Result{Ok: true, ErrStr: ""}, nil
+	return &types.Result{Ok: true}, nil
 }
