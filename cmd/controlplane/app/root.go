@@ -23,7 +23,7 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "controlplane",
 	Short: "acar controlplane",
-	Version: fmt.Sprintf("reposiTree Version: %s (Revision: %s / GoVersion: %s / Compiler: %s)\n",
+	Version: fmt.Sprintf("acar controlplane server Version: %s (Revision: %s / GoVersion: %s / Compiler: %s)\n",
 		Version, Revision, GoVersion, Compiler),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		err := cmd.Help()

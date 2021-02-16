@@ -29,7 +29,7 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "srnode-agent",
 	Short: "acar SRNode Agent",
-	Version: fmt.Sprintf("reposiTree Version: %s (Revision: %s / GoVersion: %s / Compiler: %s)\n",
+	Version: fmt.Sprintf("acar srnode agent Version: %s (Revision: %s / GoVersion: %s / Compiler: %s)\n",
 		Version, Revision, GoVersion, Compiler),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		err := cmd.Help()
