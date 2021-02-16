@@ -9,6 +9,8 @@ import (
 	"github.com/RyanCarrier/dijkstra"
 )
 
+const testFileDir = "../../testdata/appagent/"
+
 func Test_makeSIDList(t *testing.T) {
 	type args struct {
 		srcAddr          string
@@ -26,7 +28,7 @@ func Test_makeSIDList(t *testing.T) {
 			args: args{
 				srcAddr:          "fd00:0:0:1::1",
 				dstAddr:          "fd00:0:0:5::1",
-				topologyFilePath: "../testdata/test1.txt",
+				topologyFilePath: testFileDir + "test1.txt",
 			},
 			want:    &[]string{"fd00:0:0:1::1", "fd00:0:0:3::1", "fd00:0:0:2::1", "fd00:0:0:5::1"},
 			wantErr: false,
@@ -35,7 +37,7 @@ func Test_makeSIDList(t *testing.T) {
 			args: args{
 				srcAddr:          "",
 				dstAddr:          "fd00:0:0:5::1",
-				topologyFilePath: "../testdata/test1.txt",
+				topologyFilePath: testFileDir + "test1.txt",
 			},
 			want:    nil,
 			wantErr: true,
@@ -44,7 +46,7 @@ func Test_makeSIDList(t *testing.T) {
 			args: args{
 				srcAddr:          "fd00:0:0:1::1",
 				dstAddr:          "",
-				topologyFilePath: "../testdata/test1.txt",
+				topologyFilePath: testFileDir + "test1.txt",
 			},
 			want:    nil,
 			wantErr: true,
@@ -53,7 +55,7 @@ func Test_makeSIDList(t *testing.T) {
 			args: args{
 				srcAddr:          "fd00:0:0:1::2",
 				dstAddr:          "fd00:0:0:1::5",
-				topologyFilePath: "../testdata/test1.txt",
+				topologyFilePath: testFileDir + "test1.txt",
 			},
 			want:    nil,
 			wantErr: true,
@@ -62,7 +64,7 @@ func Test_makeSIDList(t *testing.T) {
 			args: args{
 				srcAddr:          "fd00:0:0:2::1",
 				dstAddr:          "fd00:0:0:1::5",
-				topologyFilePath: "../testdata/test1.txt",
+				topologyFilePath: testFileDir + "test1.txt",
 			},
 			want:    nil,
 			wantErr: true,
@@ -71,7 +73,7 @@ func Test_makeSIDList(t *testing.T) {
 			args: args{
 				srcAddr:          "fd00:0:0:1::1",
 				dstAddr:          "fd00:0:0:2::5",
-				topologyFilePath: "../testdata/test1.txt",
+				topologyFilePath: testFileDir + "test1.txt",
 			},
 			want:    nil,
 			wantErr: true,
@@ -98,7 +100,7 @@ func Test_makeSIDList(t *testing.T) {
 
 // TODO more cases
 func Test_makeGraph(t *testing.T) {
-	g, _ := dijkstra.Import("../testdata/test2.txt")
+	g, _ := dijkstra.Import(testFileDir + "test2.txt")
 	type args struct {
 		nodesInfo *api.NodesInfo
 	}
