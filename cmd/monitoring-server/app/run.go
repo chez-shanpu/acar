@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/viper"
 
@@ -134,7 +135,8 @@ func (s *monitoringServer) GetNodes(ctx context.Context, parm *api.GetNodesParam
 
 	ni := api.NodesInfo{}
 	for _, key := range keys {
-		n := api.Node{SID: key}
+		sid := strings.Split(key, "/")[1]
+		n := api.Node{SID: sid}
 		res := rdb.HGetAll(ctx, key)
 		sidLcMap, err := res.Result()
 		if err != nil {
