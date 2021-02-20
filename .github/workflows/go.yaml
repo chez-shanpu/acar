@@ -23,8 +23,8 @@ jobs:
       run: |
         PROTOC_ZIP=protoc-${{ matrix.protoc-version }}-linux-x86_64.zip
         curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v${{ matrix.protoc-version }}/$PROTOC_ZIP
-        sudo unzip -o $PROTOC_ZIP -d ./ bin/protoc
-        sudo unzip -o $PROTOC_ZIP -d ./ 'include/*'
+        unzip -o $PROTOC_ZIP -d ./ protoc
+        unzip -o $PROTOC_ZIP -d ./ 'include/*'
         rm -f $PROTOC_ZIP
     - name: Checkout code
       uses: actions/checkout@v2
