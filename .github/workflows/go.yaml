@@ -23,8 +23,8 @@ jobs:
       run: |
         PROTOC_ZIP=protoc-${{ matrix.protoc-version }}-linux-x86_64.zip
         curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v${{ matrix.protoc-version }}/$PROTOC_ZIP
-        sudo unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
-        sudo unzip -o $PROTOC_ZIP -d /usr/local 'include/*'
+        sudo unzip -o $PROTOC_ZIP -d ./ bin/protoc
+        sudo unzip -o $PROTOC_ZIP -d ./ 'include/*'
         rm -f $PROTOC_ZIP
     - name: Checkout code
       uses: actions/checkout@v2
@@ -46,7 +46,7 @@ jobs:
         fi
     - name: Check .pb.go is up-to-date
       run: |
-        make pb
+        make pb PROTOC=./protoc
         if [[ $(git diff --name-only) != "" ]]; then \
           echo "*.pb.go are not updated."; \
           exit 1; \
