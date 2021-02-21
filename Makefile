@@ -28,7 +28,8 @@ CMDS:=$(subst cmd,bin,$(CMD_DIRS))
 	$^
 
 .SECONDEXPANSION:
-bin/%: $(wildcard cmd/*/*.go) $(wildcard cmd/*/*/*.go) $(wildcard pkg/*/*.go) go.mod bin
+#bin/%: $(wildcard cmd/*/*.go) $(wildcard cmd/*/*/*.go) $(wildcard pkg/*/*.go) go.mod bin
+bin/%:
 	$(GO) build $(GO_BUILD_OPT) -o $@ ./cmd/$*
 
 
