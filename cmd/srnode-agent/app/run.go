@@ -74,7 +74,6 @@ func init() {
 
 	// flags
 	flags := runCmd.Flags()
-	flags.StringP("config", "c", "", "path to config file")
 	flags.String("mnt-addr", "localhost", "monitoring server address")
 	flags.String("srnode-addr", "localhost", "SRNode address")
 	flags.Uint16("srnode-port", 161, "SRNode snmp port num")
@@ -86,7 +85,6 @@ func init() {
 	flags.Int("interval", 60, "measurement interval when measuring the interface usage rate (sec)")
 
 	// bind flags
-	_ = viper.BindPFlag("srnode-agent.run.config", flags.Lookup("config"))
 	_ = viper.BindPFlag("srnode-agent.run.mnt-addr", flags.Lookup("mnt-addr"))
 	_ = viper.BindPFlag("srnode-agent.run.srnode-addr", flags.Lookup("srnode-addr"))
 	_ = viper.BindPFlag("srnode-agent.run.srnode-port", flags.Lookup("srnode-port"))
@@ -98,7 +96,6 @@ func init() {
 	_ = viper.BindPFlag("srnode-agent.run.interval", flags.Lookup("interval"))
 
 	// required
-	_ = runCmd.MarkFlagRequired("config")
 	_ = runCmd.MarkFlagRequired("mnt-addr")
 	_ = runCmd.MarkFlagRequired("srnode-addr")
 	_ = runCmd.MarkFlagRequired("snmp-user")
