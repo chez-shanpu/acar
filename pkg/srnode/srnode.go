@@ -95,11 +95,12 @@ func getInterfaceIndexByName(snmp *gosnmp.GoSNMP, ifName string) (int, error) {
 		}
 
 		for _, variable := range res.Variables {
-			if variable.Type != gosnmp.OctetString {
+			if variable.Type == gosnmp.OctetString || variable.Type == gosnmp.UnknownType {
+				if variable.Value == ifName {
+					return i, nil
+				}
+			} else {
 				return 0, fmt.Errorf("variable type is wrong correct %v, got %v", gosnmp.OctetString, variable.Type)
-			}
-			if variable.Value == ifName {
-				return i, nil
 			}
 		}
 	}
