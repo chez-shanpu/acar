@@ -23,7 +23,7 @@ import (
 )
 
 type config struct {
-	networkInterfaces []*srnode.NetworkInterface
+	NetworkInterfaces []*srnode.NetworkInterface
 }
 
 // runCmd represents the run command
@@ -42,15 +42,15 @@ var runCmd = &cobra.Command{
 		snmpPrivPass := viper.GetString("srnode-agent.run.snmp-priv-pass")
 		sc := newSNMPClient(srnodeAddr, srnodePort, snmpUser, snmpAuthPass, snmpPrivPass)
 		interval := viper.GetInt("srnode-agent.run.interval")
-		nodes, err := srnode.GatherMetricsBySNMP(c.networkInterfaces, sc, interval)
+		nodes, err := srnode.GatherMetricsBySNMP(c.NetworkInterfaces, sc, interval)
 		if err != nil {
-			fmt.Printf("failed to send metrics to monitoring server: %v", err)
+			fmt.Printf("failed to gather metrics by snmp: %v", err)
 			os.Exit(1)
 		}
 
 		// The link cost to different SIDs in the same host is 0
 		for _, n := range nodes {
-			for _, ni := range c.networkInterfaces {
+			for _, ni := range c.NetworkInterfaces {
 				if n.SID != ni.Sid {
 					lc := srnode.NewLinkCost(ni.Sid, 0)
 					n.LinkCosts = append(n.LinkCosts, lc)

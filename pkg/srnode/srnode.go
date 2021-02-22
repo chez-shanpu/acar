@@ -82,7 +82,7 @@ func getInterfaceIndexByName(snmp *gosnmp.GoSNMP, ifName string) (int, error) {
 	var maxIfIndex int
 	for _, variable := range res.Variables {
 		if variable.Type != gosnmp.Integer {
-			return 0, fmt.Errorf("variable type is wrong: %v", variable.Type)
+			return 0, fmt.Errorf("variable type is wrong correct %v, got %v", gosnmp.Integer, variable.Type)
 		}
 		maxIfIndex = int(gosnmp.ToBigInt(variable.Value).Int64())
 	}
@@ -95,11 +95,12 @@ func getInterfaceIndexByName(snmp *gosnmp.GoSNMP, ifName string) (int, error) {
 		}
 
 		for _, variable := range res.Variables {
-			if variable.Type != gosnmp.OctetString {
-				return 0, fmt.Errorf("variable type is wrong: %v", variable.Type)
-			}
-			if variable.Value == ifName {
-				return i, nil
+			if variable.Type == gosnmp.OctetString || variable.Type == gosnmp.NoSuchInstance {
+				if string(variable.Value.([]uint8)) == ifName {
+					return i, nil
+				}
+			} else {
+				return 0, fmt.Errorf("variable type is wrong correct %v, got %v", gosnmp.OctetString, variable.Type)
 			}
 		}
 	}
@@ -122,7 +123,7 @@ func getInterfaceCapacity(snmp *gosnmp.GoSNMP, ifIndex int) (int64, error) {
 	var linkCapBits int64
 	for _, variable := range res.Variables {
 		if variable.Type != gosnmp.Gauge32 {
-			return -1, fmt.Errorf("variable type is wrong: %v", variable.Type)
+			return -1, fmt.Errorf("variable type is wrong correct %v, got %v", gosnmp.Gauge32, variable.Type)
 		}
 		linkCapBits = gosnmp.ToBigInt(variable.Value).Int64()
 	}
@@ -145,7 +146,7 @@ func getInterfaceUsageBytes(snmp *gosnmp.GoSNMP, ifIndex int) (int64, error) {
 	totalBytes := big.NewInt(0)
 	for _, variable := range res.Variables {
 		if variable.Type != gosnmp.Counter64 {
-			return 0, fmt.Errorf("variable type is wrong: %v", variable.Type)
+			return 0, fmt.Errorf("variable type is wrong correct %v, got %v", gosnmp.Counter64, variable.Type)
 		}
 		totalBytes.Add(totalBytes, gosnmp.ToBigInt(variable.Value))
 	}
