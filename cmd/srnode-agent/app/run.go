@@ -44,7 +44,7 @@ var runCmd = &cobra.Command{
 		interval := viper.GetInt("srnode-agent.run.interval")
 		nodes, err := srnode.GatherMetricsBySNMP(c.NetworkInterfaces, sc, interval)
 		if err != nil {
-			fmt.Printf("failed to send metrics to monitoring server: %v", err)
+			fmt.Printf("failed to gather metrics by snmp: %v", err)
 			os.Exit(1)
 		}
 
