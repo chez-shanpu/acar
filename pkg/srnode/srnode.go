@@ -155,7 +155,7 @@ func getInterfaceUsageBytes(snmp *gosnmp.GoSNMP, ifIndex int) (int64, error) {
 
 func calcInterfaceUsagePercent(firstBytes, secondBytes int64, duration float64, linkCapBits int64) float64 {
 	traficBytesDiff := secondBytes - firstBytes
-	ifUsagePercent := float64(traficBytesDiff) / duration * float64(linkCapBits)) * BytesToBits * 100.0
+	ifUsagePercent := float64(traficBytesDiff) / (duration * float64(linkCapBits)) * BytesToBits * 100.0
 	if ifUsagePercent < 0 {
 		ifUsagePercent = 0
 	}
