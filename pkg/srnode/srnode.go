@@ -24,7 +24,7 @@ type NetworkInterface struct {
 	Sid           string
 	NextSid       string
 	InterfaceName string
-	linkCap       int64
+	LinkCap       int64
 }
 
 func GatherMetricsBySNMP(networkInterfaces []*NetworkInterface, sc *gosnmp.GoSNMP, interval int) ([]*api.Node, error) {
@@ -40,7 +40,7 @@ func GatherMetricsBySNMP(networkInterfaces []*NetworkInterface, sc *gosnmp.GoSNM
 				if err != nil {
 					return err
 				}
-				usage, err := getInterfaceUsagePercentBySNMP(sc, ifIndex, interval, ni.linkCap)
+				usage, err := getInterfaceUsagePercentBySNMP(sc, ifIndex, interval, ni.LinkCap)
 				if err != nil {
 					return err
 				}
