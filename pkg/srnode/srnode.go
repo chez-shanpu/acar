@@ -165,7 +165,7 @@ func calcInterfaceUsagePercent(firstBytes, secondBytes int64, duration float64, 
 }
 
 func getInterfaceUsagePercentBySNMP(snmp *gosnmp.GoSNMP, ifIndex, secInterval int, linkCap int64) (float64, error) {
-	if linkCap < 0 {
+	if linkCap <= 0 {
 		var err error
 		linkCap, err = getInterfaceCapacity(snmp, ifIndex)
 		if err != nil {
