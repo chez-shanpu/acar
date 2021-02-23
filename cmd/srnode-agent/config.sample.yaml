@@ -2,3 +2,5 @@ networkInterfaces:
 - sid: "fd00:0:0:1::1"
   nextSid: "fd00:0:0:2::1"
   interfaceName: "ens160"
+  linkCap: 10000
+#  linkCap is Mbps

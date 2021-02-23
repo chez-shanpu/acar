@@ -13,6 +13,7 @@ import (
 )
 
 const BytesToBits = 8.0
+const MegaBitsToBits = 1000000
 const ifHighSpeedOID = "1.3.6.1.2.1.31.1.1.1.15"
 const ifHCInOctetsOID = "1.3.6.1.2.1.31.1.1.1.6"
 const ifHCOutOctetsOID = "1.3.6.1.2.1.31.1.1.1.10"
@@ -23,6 +24,7 @@ type NetworkInterface struct {
 	Sid           string
 	NextSid       string
 	InterfaceName string
+	linkCap       int64
 }
 
 func GatherMetricsBySNMP(networkInterfaces []*NetworkInterface, sc *gosnmp.GoSNMP, interval int) ([]*api.Node, error) {
@@ -38,7 +40,7 @@ func GatherMetricsBySNMP(networkInterfaces []*NetworkInterface, sc *gosnmp.GoSNM
 				if err != nil {
 					return err
 				}
-				usage, err := getInterfaceUsagePercentBySNMP(sc, ifIndex, interval)
+				usage, err := getInterfaceUsagePercentBySNMP(sc, ifIndex, interval, ni.linkCap)
 				if err != nil {
 					return err
 				}
@@ -162,10 +164,13 @@ func calcInterfaceUsagePercent(firstBytes, secondBytes int64, duration float64, 
 	return ifUsagePercent
 }
 
-func getInterfaceUsagePercentBySNMP(snmp *gosnmp.GoSNMP, ifIndex, secInterval int) (float64, error) {
-	linkCapBits, err := getInterfaceCapacity(snmp, ifIndex)
-	if err != nil {
-		return 0, err
+func getInterfaceUsagePercentBySNMP(snmp *gosnmp.GoSNMP, ifIndex, secInterval int, linkCap int64) (float64, error) {
+	if linkCap < 0 {
+		var err error
+		linkCap, err = getInterfaceCapacity(snmp, ifIndex)
+		if err != nil {
+			return 0, err
+		}
 	}
 	// first
 	firstUsageBytesMetric, err := getInterfaceUsageBytes(snmp, ifIndex)
@@ -186,7 +191,7 @@ func getInterfaceUsagePercentBySNMP(snmp *gosnmp.GoSNMP, ifIndex, secInterval in
 
 	// calcurate
 	dur := secondGetTime.Sub(firstGetTime).Seconds()
-	ifUsagePercent := calcInterfaceUsagePercent(firstUsageBytesMetric, secondUsageBytesMetric, dur, linkCapBits)
+	ifUsagePercent := calcInterfaceUsagePercent(firstUsageBytesMetric, secondUsageBytesMetric, dur, linkCap*MegaBitsToBits)
 
 	return ifUsagePercent, nil
 }
