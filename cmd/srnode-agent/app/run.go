@@ -18,7 +18,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/gosnmp/gosnmp"
 	"github.com/spf13/cobra"
 )
 
@@ -40,9 +39,8 @@ var runCmd = &cobra.Command{
 		snmpUser := viper.GetString("srnode-agent.run.snmp-user")
 		snmpAuthPass := viper.GetString("srnode-agent.run.snmp-auth-pass")
 		snmpPrivPass := viper.GetString("srnode-agent.run.snmp-priv-pass")
-		sc := newSNMPClient(srnodeAddr, srnodePort, snmpUser, snmpAuthPass, snmpPrivPass)
 		interval := viper.GetInt("srnode-agent.run.interval")
-		nodes, err := srnode.GatherMetricsBySNMP(c.NetworkInterfaces, sc, interval)
+		nodes, err := srnode.GatherMetricsBySNMP(c.NetworkInterfaces, interval, srnodeAddr, srnodePort, snmpUser, snmpAuthPass, snmpPrivPass)
 		if err != nil {
 			fmt.Printf("failed to gather metrics by snmp: %v", err)
 			os.Exit(1)
@@ -101,24 +99,6 @@ func init() {
 	_ = runCmd.MarkFlagRequired("snmp-user")
 	_ = runCmd.MarkFlagRequired("snmp-auth-pass")
 	_ = runCmd.MarkFlagRequired("snmp-priv-pass")
-}
-
-func newSNMPClient(addr string, port uint16, user, authPass, privPass string) *gosnmp.GoSNMP {
-	return &gosnmp.GoSNMP{
-		Target:        addr,
-		Port:          port,
-		Version:       gosnmp.Version3,
-		SecurityModel: gosnmp.UserSecurityModel,
-		MsgFlags:      gosnmp.AuthPriv,
-		SecurityParameters: &gosnmp.UsmSecurityParameters{
-			UserName:                 user,
-			AuthenticationProtocol:   gosnmp.MD5,
-			AuthenticationPassphrase: authPass,
-			PrivacyProtocol:          gosnmp.DES,
-			PrivacyPassphrase:        privPass,
-		},
-		Timeout: 10 * time.Second,
-	}
 }
 
 func sendToMonitoringServer(tls bool, certFilePath, mntAddr string, nodes *api.NodesInfo) error {

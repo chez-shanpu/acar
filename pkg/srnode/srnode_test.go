@@ -29,7 +29,7 @@ func Test_calcInterfaceUsagePercent(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := calcInterfaceUsagePercent(tt.args.firstBytes, tt.args.secondBytes, tt.args.firstTime, tt.args.secondTime, tt.args.linkCapBits); got != tt.want {
+			if got := calcInterfaceUsagePercent(tt.args.firstBytes, tt.args.secondBytes, float64(tt.args.secondTime-tt.args.firstTime), tt.args.linkCapBits); got != tt.want {
 				t.Errorf("calcInterfaceUsagePercent() = %v, want %v", got, tt.want)
 			}
 		})
