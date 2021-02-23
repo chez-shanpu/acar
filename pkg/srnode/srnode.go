@@ -27,13 +27,14 @@ type NetworkInterface struct {
 	LinkCap       int64
 }
 
-func GatherMetricsBySNMP(networkInterfaces []*NetworkInterface, sc *gosnmp.GoSNMP, interval int) ([]*api.Node, error) {
+func GatherMetricsBySNMP(networkInterfaces []*NetworkInterface, interval int, srnodeAddr string, srnodePort uint16, snmpUser, snmpAuthPass, snmpPrivPass string) ([]*api.Node, error) {
 	var eg errgroup.Group
 	var nodes []*api.Node
 
 	mutex := &sync.Mutex{}
 	for _, ni := range networkInterfaces {
 		ni := ni
+		sc := newSNMPClient(srnodeAddr, srnodePort, snmpUser, snmpAuthPass, snmpPrivPass)
 		eg.Go(func() error {
 			return func(ni *NetworkInterface) error {
 				ifIndex, err := getInterfaceIndexByName(sc, ni.InterfaceName)
@@ -65,6 +66,24 @@ func NewLinkCost(nextSid string, cost float64) *api.LinkCost {
 	return &api.LinkCost{
 		NextSid: nextSid,
 		Cost:    cost,
+	}
+}
+
+func newSNMPClient(addr string, port uint16, user, authPass, privPass string) *gosnmp.GoSNMP {
+	return &gosnmp.GoSNMP{
+		Target:        addr,
+		Port:          port,
+		Version:       gosnmp.Version3,
+		SecurityModel: gosnmp.UserSecurityModel,
+		MsgFlags:      gosnmp.AuthPriv,
+		SecurityParameters: &gosnmp.UsmSecurityParameters{
+			UserName:                 user,
+			AuthenticationProtocol:   gosnmp.MD5,
+			AuthenticationPassphrase: authPass,
+			PrivacyProtocol:          gosnmp.DES,
+			PrivacyPassphrase:        privPass,
+		},
+		Timeout: 10 * time.Second,
 	}
 }
 
