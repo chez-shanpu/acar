@@ -110,7 +110,7 @@ func (s *dataplaneServer) ApplySRPolicy(ctx context.Context, si *api.SRInfo) (*t
 
 	var sidList []net.IP
 	for _, sid := range si.SidList {
-		sidList = append(sidList, net.ParseIP(sid))
+		sidList = append([]net.IP{net.ParseIP(sid)}, sidList...)
 	}
 	seg6encap.Segments = sidList
 
