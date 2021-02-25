@@ -46,16 +46,6 @@ var runCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		// The link cost to different SIDs in the same host is 0
-		for _, n := range nodes {
-			for _, ni := range c.NetworkInterfaces {
-				if n.SID != ni.Sid {
-					lc := srnode.NewLinkCost(ni.Sid, 0)
-					n.LinkCosts = append(n.LinkCosts, lc)
-				}
-			}
-		}
-
 		tls := viper.GetBool("srnode-agent.run.tls")
 		certFilePath := viper.GetString("srnode-agent.run.cert-path")
 		mntAddr := viper.GetString("srnode-agent.run.mnt-addr")

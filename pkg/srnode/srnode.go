@@ -22,7 +22,7 @@ const ifDescrOID = "1.3.6.1.2.1.2.2.1.2"
 
 type NetworkInterface struct {
 	Sid           string
-	NextSid       string
+	NextSids      []string
 	InterfaceName string
 	LinkCap       int64
 }
@@ -45,13 +45,15 @@ func GatherMetricsBySNMP(networkInterfaces []*NetworkInterface, interval int, sr
 				if err != nil {
 					return err
 				}
-				node := api.Node{
-					SID:       ni.Sid,
-					LinkCosts: []*api.LinkCost{NewLinkCost(ni.NextSid, usage)},
+				for _, ns := range ni.NextSids {
+					node := api.Node{
+						SID:       ni.Sid,
+						LinkCosts: []*api.LinkCost{NewLinkCost(ns, usage)},
+					}
+					mutex.Lock()
+					nodes = append(nodes, &node)
+					mutex.Unlock()
 				}
-				mutex.Lock()
-				nodes = append(nodes, &node)
-				mutex.Unlock()
 				return nil
 			}(ni)
 		})
