@@ -29,9 +29,9 @@ var runCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		depSid := viper.GetString("app-agent.run.dep-sid")
+		depSids := viper.GetStringSlice("app-agent.run.dep-sid")
 		dstSid := viper.GetString("app-agent.run.dst-sid")
-		list, err := appagent.MakeSIDList(graph, depSid, dstSid)
+		list, err := appagent.MakeSIDList(graph, depSids, dstSid)
 		if err != nil {
 			fmt.Printf("[ERROR] %v", err)
 			os.Exit(1)
@@ -65,7 +65,7 @@ func init() {
 	flags.String("app-name", "", "application name")
 	flags.String("src-addr", "", "segment routing domain ingress interface address")
 	flags.String("dst-addr", "", "destination address")
-	flags.String("dep-sid", "", "the sid of the departure")
+	flags.StringSlice("dep-sid", []string{}, "the sid of the departure")
 	flags.String("dst-sid", "", "the sid of the destination")
 
 	// bind flags
