@@ -12,6 +12,7 @@ import (
 )
 
 const significantDigits = 100000
+const startVertexName = "start"
 
 func GetSRNodesInfo(tls bool, certFilePath, mntAddr string) (*api.NodesInfo, error) {
 	var opts []grpc.DialOption
@@ -62,16 +63,21 @@ func MakeGraph(nodesInfo *api.NodesInfo) (*dijkstra.Graph, error) {
 	return graph, nil
 }
 
-func MakeSIDList(graph *dijkstra.Graph, depSid, dstSid string) (*[]string, error) {
-	depSidIndex, err := graph.GetMapping(depSid)
-	if err != nil {
-		return nil, fmt.Errorf("failed to graph.GetMapping with source address (Is your `dep-sid` correct?): %v", err)
-	}
+func MakeSIDList(graph *dijkstra.Graph, depSids []string, dstSid string) (*[]string, error) {
 	dstSidIndex, err := graph.GetMapping(dstSid)
 	if err != nil {
 		return nil, fmt.Errorf("failed to graph.GetMapping with destination address (Is your `dst-sid` correct?): %v", err)
 	}
-	best, err := graph.Shortest(depSidIndex, dstSidIndex)
+
+	startID := graph.AddMappedVertex(startVertexName)
+	for _, depSid := range depSids {
+		err = graph.AddMappedArc(startVertexName, depSid, 0)
+		if err != nil {
+			return nil, fmt.Errorf("graph.AddMappedArc was failed: %v", err)
+		}
+	}
+
+	best, err := graph.Shortest(startID, dstSidIndex)
 	if err != nil {
 		return nil, fmt.Errorf("failed to searching shortest path: %v", err)
 	}
@@ -79,7 +85,9 @@ func MakeSIDList(graph *dijkstra.Graph, depSid, dstSid string) (*[]string, error
 	var sids []string
 	for _, verIndex := range best.Path {
 		sid, _ := graph.GetMapped(verIndex)
-		sids = append(sids, sid)
+		if sid != startVertexName {
+			sids = append(sids, sid)
+		}
 	}
 	if sids == nil {
 		return nil, fmt.Errorf("something wrong with calc route: sid list is empth")
