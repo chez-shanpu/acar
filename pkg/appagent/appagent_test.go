@@ -13,7 +13,7 @@ const testFileDir = "../../testdata/appagent/"
 
 func Test_makeSIDList(t *testing.T) {
 	type args struct {
-		srcAddr          string
+		srcAddr          []string
 		dstAddr          string
 		topologyFilePath string
 	}
@@ -26,7 +26,7 @@ func Test_makeSIDList(t *testing.T) {
 		{
 			name: "normal case",
 			args: args{
-				srcAddr:          "fd00:0:0:1::1",
+				srcAddr:          []string{"fd00:0:0:1::1"},
 				dstAddr:          "fd00:0:0:5::1",
 				topologyFilePath: testFileDir + "test1.txt",
 			},
@@ -35,7 +35,7 @@ func Test_makeSIDList(t *testing.T) {
 		}, {
 			name: "empty source address",
 			args: args{
-				srcAddr:          "",
+				srcAddr:          []string{""},
 				dstAddr:          "fd00:0:0:5::1",
 				topologyFilePath: testFileDir + "test1.txt",
 			},
@@ -44,7 +44,7 @@ func Test_makeSIDList(t *testing.T) {
 		}, {
 			name: "empty destination address",
 			args: args{
-				srcAddr:          "fd00:0:0:1::1",
+				srcAddr:          []string{"fd00:0:0:1::1"},
 				dstAddr:          "",
 				topologyFilePath: testFileDir + "test1.txt",
 			},
@@ -53,7 +53,7 @@ func Test_makeSIDList(t *testing.T) {
 		}, {
 			name: "no path from source to destination",
 			args: args{
-				srcAddr:          "fd00:0:0:1::2",
+				srcAddr:          []string{"fd00:0:0:1::2"},
 				dstAddr:          "fd00:0:0:1::5",
 				topologyFilePath: testFileDir + "test1.txt",
 			},
@@ -62,7 +62,7 @@ func Test_makeSIDList(t *testing.T) {
 		}, {
 			name: "no key that matches source address",
 			args: args{
-				srcAddr:          "fd00:0:0:2::1",
+				srcAddr:          []string{"fd00:0:0:2::1"},
 				dstAddr:          "fd00:0:0:1::5",
 				topologyFilePath: testFileDir + "test1.txt",
 			},
@@ -71,7 +71,7 @@ func Test_makeSIDList(t *testing.T) {
 		}, {
 			name: "no key that matches destination address",
 			args: args{
-				srcAddr:          "fd00:0:0:1::1",
+				srcAddr:          []string{"fd00:0:0:1::1"},
 				dstAddr:          "fd00:0:0:2::5",
 				topologyFilePath: testFileDir + "test1.txt",
 			},
@@ -81,12 +81,13 @@ func Test_makeSIDList(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			graph, err := dijkstra.Import(tt.args.topologyFilePath)
-			if err != nil {
-				t.Errorf("failed to import graph from file : %v", err)
-				return
-			}
-			got, err := MakeSIDList(&graph, tt.args.srcAddr, tt.args.dstAddr)
+			//graph, err := dijkstra.Import(tt.args.topologyFilePath)
+			//if err != nil {
+			//	t.Errorf("failed to import graph from file : %v", err)
+			//	return
+			//}
+			graph := makeTestGraph()
+			got, err := MakeSIDList(graph, tt.args.srcAddr, tt.args.dstAddr)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("makeSIDList() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -96,6 +97,27 @@ func Test_makeSIDList(t *testing.T) {
 			}
 		})
 	}
+}
+
+func makeTestGraph() *dijkstra.Graph {
+	graph := dijkstra.NewGraph()
+	graph.AddMappedVertex("fd00:0:0:1::1")
+	graph.AddMappedVertex("fd00:0:0:2::1")
+	graph.AddMappedVertex("fd00:0:0:3::1")
+	graph.AddMappedVertex("fd00:0:0:4::1")
+	graph.AddMappedVertex("fd00:0:0:5::1")
+
+	_ = graph.AddMappedArc("fd00:0:0:1::1", "fd00:0:0:2::1", 4)
+	_ = graph.AddMappedArc("fd00:0:0:1::1", "fd00:0:0:3::1", 2)
+
+	_ = graph.AddMappedArc("fd00:0:0:2::1", "fd00:0:0:4::1", 2)
+	_ = graph.AddMappedArc("fd00:0:0:2::1", "fd00:0:0:3::1", 3)
+	_ = graph.AddMappedArc("fd00:0:0:2::1", "fd00:0:0:5::1", 3)
+
+	_ = graph.AddMappedArc("fd00:0:0:3::1", "fd00:0:0:2::1", 1)
+	_ = graph.AddMappedArc("fd00:0:0:3::1", "fd00:0:0:4::1", 4)
+	_ = graph.AddMappedArc("fd00:0:0:3::1", "fd00:0:0:5::1", 5)
+	return graph
 }
 
 // TODO more cases

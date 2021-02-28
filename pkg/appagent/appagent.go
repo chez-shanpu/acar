@@ -64,10 +64,6 @@ func MakeGraph(nodesInfo *api.NodesInfo) (*dijkstra.Graph, error) {
 }
 
 func MakeSIDList(graph *dijkstra.Graph, depSids []string, dstSid string) (*[]string, error) {
-	//depSidIndex, err := graph.GetMapping(depSid)
-	//if err != nil {
-	//	return nil, fmt.Errorf("failed to graph.GetMapping with source address (Is your `dep-sid` correct?): %v", err)
-	//}
 	dstSidIndex, err := graph.GetMapping(dstSid)
 	if err != nil {
 		return nil, fmt.Errorf("failed to graph.GetMapping with destination address (Is your `dst-sid` correct?): %v", err)
