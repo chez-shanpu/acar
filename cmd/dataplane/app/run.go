@@ -153,6 +153,7 @@ func (s *dataplaneServer) ApplySRPolicy(ctx context.Context, si *api.SRInfo) (*t
 		},
 		Encap: seg6encap,
 	}
+	_ = netlink.RouteDel(&route)
 	if err = netlink.RouteAdd(&route); err != nil {
 		grpclog.Errorf("failed to add route: %v", err)
 		return utils.NewResult(false, err.Error()), err
