@@ -27,7 +27,7 @@ type NetworkInterface struct {
 	LinkCap       int64
 }
 
-func GatherMetricsBySNMP(networkInterfaces []*NetworkInterface, interval int, srnodeAddr string, srnodePort uint16, snmpUser, snmpAuthPass, snmpPrivPass string) ([]*api.Node, error) {
+func GatherMetricsBySNMP(networkInterfaces []*NetworkInterface, interval int, srnodeAddr string, srnodePort uint16, snmpUser, snmpAuthPass, snmpPrivPass string, rateFlag bool) ([]*api.Node, error) {
 	var eg errgroup.Group
 	var nodes []*api.Node
 
@@ -41,10 +41,19 @@ func GatherMetricsBySNMP(networkInterfaces []*NetworkInterface, interval int, sr
 				if err != nil {
 					return err
 				}
-				usage, err := getInterfaceUsagePercentBySNMP(sc, ifIndex, interval, ni.LinkCap)
+
+				usage, err := getInterfaceUsageBySNMP(sc, ifIndex, interval, ni.LinkCap, rateFlag)
 				if err != nil {
 					return err
 				}
+
+				// todo 欲しいのは空き帯域幅なのでとりあえずここで変換する
+				// 		ただしusageという名前は違和感がある
+				//		redisのデータ構造から見直さないとだめ
+				if rateFlag == false {
+					usage = float64(ni.LinkCap) - usage
+				}
+
 				for _, ns := range ni.NextSids {
 					node := api.Node{
 						SID:       ni.Sid,
@@ -176,16 +185,20 @@ func getInterfaceUsageBytes(snmp *gosnmp.GoSNMP, ifIndex int) (int64, error) {
 	return totalBytes.Int64(), nil
 }
 
-func calcInterfaceUsagePercent(firstBytes, secondBytes int64, duration float64, linkCapBits int64) float64 {
+func calcInterfaceUsage(firstBytes, secondBytes int64, duration float64, linkCapBits int64, rateFlag bool) (ifUsage float64) {
 	traficBytesDiff := secondBytes - firstBytes
-	ifUsagePercent := float64(traficBytesDiff) / (duration * float64(linkCapBits)) * BytesToBits * 100.0
-	if ifUsagePercent < 0 {
-		ifUsagePercent = 0
+	if rateFlag {
+		ifUsage = float64(traficBytesDiff) / (duration * float64(linkCapBits)) * BytesToBits * 100.0
+	} else {
+		ifUsage = float64(traficBytesDiff) / duration
 	}
-	return ifUsagePercent
+	if ifUsage < 0 {
+		ifUsage = 0
+	}
+	return
 }
 
-func getInterfaceUsagePercentBySNMP(snmp *gosnmp.GoSNMP, ifIndex, secInterval int, linkCap int64) (float64, error) {
+func getInterfaceUsageBySNMP(snmp *gosnmp.GoSNMP, ifIndex, secInterval int, linkCap int64, rateFlag bool) (float64, error) {
 	if linkCap <= 0 {
 		var err error
 		linkCap, err = getInterfaceCapacity(snmp, ifIndex)
@@ -212,7 +225,7 @@ func getInterfaceUsagePercentBySNMP(snmp *gosnmp.GoSNMP, ifIndex, secInterval in
 
 	// calcurate
 	dur := secondGetTime.Sub(firstGetTime).Seconds()
-	ifUsagePercent := calcInterfaceUsagePercent(firstUsageBytesMetric, secondUsageBytesMetric, dur, linkCap*MegaBitsToBits)
+	ifUsage := calcInterfaceUsage(firstUsageBytesMetric, secondUsageBytesMetric, dur, linkCap*MegaBitsToBits, rateFlag)
 
-	return ifUsagePercent, nil
+	return ifUsage, nil
 }

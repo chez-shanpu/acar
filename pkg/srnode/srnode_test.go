@@ -9,6 +9,7 @@ func Test_calcInterfaceUsagePercent(t *testing.T) {
 		firstTime   int
 		secondTime  int
 		linkCapBits int64
+		ratioFlag   bool
 	}
 	tests := []struct {
 		name string
@@ -23,13 +24,14 @@ func Test_calcInterfaceUsagePercent(t *testing.T) {
 				firstTime:   0,
 				secondTime:  10,
 				linkCapBits: 8000,
+				ratioFlag:   true,
 			},
 			want: 8,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := calcInterfaceUsagePercent(tt.args.firstBytes, tt.args.secondBytes, float64(tt.args.secondTime-tt.args.firstTime), tt.args.linkCapBits); got != tt.want {
+			if got := calcInterfaceUsage(tt.args.firstBytes, tt.args.secondBytes, float64(tt.args.secondTime-tt.args.firstTime), tt.args.linkCapBits, tt.args.ratioFlag); got != tt.want {
 				t.Errorf("calcInterfaceUsagePercent() = %v, want %v", got, tt.want)
 			}
 		})
