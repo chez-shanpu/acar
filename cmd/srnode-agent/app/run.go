@@ -40,8 +40,7 @@ var runCmd = &cobra.Command{
 		snmpAuthPass := viper.GetString("srnode-agent.run.snmp-auth-pass")
 		snmpPrivPass := viper.GetString("srnode-agent.run.snmp-priv-pass")
 		interval := viper.GetInt("srnode-agent.run.interval")
-		ratioFlag := viper.GetBool("srnode-agent.run.ratio")
-		nodes, err := srnode.GatherMetricsBySNMP(c.NetworkInterfaces, interval, srnodeAddr, srnodePort, snmpUser, snmpAuthPass, snmpPrivPass, ratioFlag)
+		nodes, err := srnode.GatherMetricsBySNMP(c.NetworkInterfaces, interval, srnodeAddr, srnodePort, snmpUser, snmpAuthPass, snmpPrivPass)
 		if err != nil {
 			fmt.Printf("failed to gather metrics by snmp: %v", err)
 			os.Exit(1)
@@ -72,7 +71,6 @@ func init() {
 	flags.BoolP("tls", "t", false, "monitoring server tls flag")
 	flags.String("cert-path", "", "path to monitoring server cert file (this option is enabled when tls flag is true)")
 	flags.Int("interval", 60, "measurement interval when measuring the interface usage rate (sec)")
-	flags.Bool("ratio", false, "if this flag is true, interface usage rate will be sent (default is byte amount)")
 
 	// bind flags
 	_ = viper.BindPFlag("srnode-agent.run.mnt-addr", flags.Lookup("mnt-addr"))
@@ -84,7 +82,6 @@ func init() {
 	_ = viper.BindPFlag("srnode-agent.run.tls", flags.Lookup("tls"))
 	_ = viper.BindPFlag("srnode-agent.run.cert-path", flags.Lookup("cert-path"))
 	_ = viper.BindPFlag("srnode-agent.run.interval", flags.Lookup("interval"))
-	_ = viper.BindPFlag("srnode-agent.run.ratio", flags.Lookup("ratio"))
 
 	// required
 	_ = runCmd.MarkFlagRequired("mnt-addr")

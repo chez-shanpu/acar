@@ -138,39 +138,27 @@ func Test_makeGraph(t *testing.T) {
 				nodesInfo: &api.NodesInfo{
 					Nodes: []*api.Node{
 						{
-							SID: "fd00:0:0:1::1",
-							LinkCosts: []*api.LinkCost{
-								{
-									NextSid: "fd00:0:0:2::1",
-									Cost:    4,
-								}, {
-									NextSid: "fd00:0:0:3::1",
-									Cost:    2,
-								},
-							},
+							SID:            "fd00:0:0:1::1",
+							NextSids:       []string{"fd00:0:0:2::1", "fd00:0:0:3::1"},
+							LinkUsageRatio: 4,
 						}, {
-							SID: "fd00:0:0:2::1",
-							LinkCosts: []*api.LinkCost{
-								{
-									NextSid: "fd00:0:0:4::1",
-									Cost:    2,
-								}, {
-									NextSid: "fd00:0:0:3::1",
-									Cost:    3,
-								}, {
-									NextSid: "fd00:0:0:5::1",
-									Cost:    3,
-								},
-							},
+							SID:            "fd00:0:0:2::1",
+							NextSids:       []string{"fd00:0:0:4::1"},
+							LinkUsageRatio: 4,
 						}, {
-							SID:       "fd00:0:0:3::1",
-							LinkCosts: nil,
+							SID:            "fd00:0:0:3::1",
+							NextSids:       []string{"fd00:0:0:5::1"},
+							LinkUsageRatio: 1,
 						}, {
-							SID:       "fd00:0:0:4::1",
-							LinkCosts: nil,
+							SID:            "fd00:0:0:4::1",
+							NextSids:       []string{"fd00:0:0:5::2", "fd00:0:0:6::1"},
+							LinkUsageRatio: 3,
 						}, {
-							SID:       "fd00:0:0:5::1",
-							LinkCosts: nil,
+							SID:            "fd00:0:0:5::1",
+							NextSids:       []string{"fd00:0:0:4::2", "fd00:0:0:6::1"},
+							LinkUsageRatio: 2,
+						}, {
+							SID: "fd00:0:0:6::1",
 						},
 					},
 				},

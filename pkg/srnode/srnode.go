@@ -27,7 +27,7 @@ type NetworkInterface struct {
 	LinkCap       int64
 }
 
-func GatherMetricsBySNMP(networkInterfaces []*NetworkInterface, interval int, srnodeAddr string, srnodePort uint16, snmpUser, snmpAuthPass, snmpPrivPass string, rateFlag bool) ([]*api.Node, error) {
+func GatherMetricsBySNMP(networkInterfaces []*NetworkInterface, interval int, srnodeAddr string, srnodePort uint16, snmpUser, snmpAuthPass, snmpPrivPass string) ([]*api.Node, error) {
 	var eg errgroup.Group
 	var nodes []*api.Node
 
@@ -42,27 +42,21 @@ func GatherMetricsBySNMP(networkInterfaces []*NetworkInterface, interval int, sr
 					return err
 				}
 
-				usage, err := getInterfaceUsageBySNMP(sc, ifIndex, interval, ni.LinkCap, rateFlag)
+				usageRatio, usageBytes, err := getInterfaceUsageBySNMP(sc, ifIndex, interval, ni.LinkCap)
 				if err != nil {
 					return err
 				}
 
-				// todo 欲しいのは空き帯域幅なのでとりあえずここで変換する
-				// 		ただしusageという名前は違和感がある
-				//		redisのデータ構造から見直さないとだめ
-				if rateFlag == false {
-					usage = float64(ni.LinkCap) - usage
+				node := api.Node{
+					SID:            ni.Sid,
+					NextSids:       ni.NextSids,
+					LinkCap:        ni.LinkCap,
+					LinkUsageRatio: usageRatio,
+					LinkUsageBytes: usageBytes,
 				}
-
-				for _, ns := range ni.NextSids {
-					node := api.Node{
-						SID:       ni.Sid,
-						LinkCosts: []*api.LinkCost{NewLinkCost(ns, usage)},
-					}
-					mutex.Lock()
-					nodes = append(nodes, &node)
-					mutex.Unlock()
-				}
+				mutex.Lock()
+				nodes = append(nodes, &node)
+				mutex.Unlock()
 				return nil
 			}(ni)
 		})
@@ -71,13 +65,6 @@ func GatherMetricsBySNMP(networkInterfaces []*NetworkInterface, interval int, sr
 		return nil, err
 	}
 	return nodes, nil
-}
-
-func NewLinkCost(nextSid string, cost float64) *api.LinkCost {
-	return &api.LinkCost{
-		NextSid: nextSid,
-		Cost:    cost,
-	}
 }
 
 func newSNMPClient(addr string, port uint16, user, authPass, privPass string) *gosnmp.GoSNMP {
@@ -185,31 +172,34 @@ func getInterfaceUsageBytes(snmp *gosnmp.GoSNMP, ifIndex int) (int64, error) {
 	return totalBytes.Int64(), nil
 }
 
-func calcInterfaceUsage(firstBytes, secondBytes int64, duration float64, linkCapBits int64, rateFlag bool) (ifUsage float64) {
+func calcInterfaceUsage(firstBytes, secondBytes int64, duration float64, linkCapBits int64) (float64, float64) {
 	traficBytesDiff := secondBytes - firstBytes
-	if rateFlag {
-		ifUsage = float64(traficBytesDiff) / (duration * float64(linkCapBits)) * BytesToBits * 100.0
-	} else {
-		ifUsage = float64(traficBytesDiff) / duration
+
+	ifUsageRatio := float64(traficBytesDiff) / (duration * float64(linkCapBits)) * BytesToBits * 100.0
+	if ifUsageRatio < 0 {
+		ifUsageRatio = 0
 	}
-	if ifUsage < 0 {
-		ifUsage = 0
+
+	ifUsageBytes := float64(traficBytesDiff) / duration
+	if ifUsageBytes < 0 {
+		ifUsageBytes = 0
 	}
-	return
+
+	return ifUsageRatio, ifUsageBytes
 }
 
-func getInterfaceUsageBySNMP(snmp *gosnmp.GoSNMP, ifIndex, secInterval int, linkCap int64, rateFlag bool) (float64, error) {
+func getInterfaceUsageBySNMP(snmp *gosnmp.GoSNMP, ifIndex, secInterval int, linkCap int64) (float64, float64, error) {
 	if linkCap <= 0 {
 		var err error
 		linkCap, err = getInterfaceCapacity(snmp, ifIndex)
 		if err != nil {
-			return 0, err
+			return 0, 0, err
 		}
 	}
 	// first
 	firstUsageBytesMetric, err := getInterfaceUsageBytes(snmp, ifIndex)
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 	firstGetTime := time.Now()
 
@@ -219,13 +209,13 @@ func getInterfaceUsageBySNMP(snmp *gosnmp.GoSNMP, ifIndex, secInterval int, link
 	// second
 	secondUsageBytesMetric, err := getInterfaceUsageBytes(snmp, ifIndex)
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 	secondGetTime := time.Now()
 
 	// calcurate
 	dur := secondGetTime.Sub(firstGetTime).Seconds()
-	ifUsage := calcInterfaceUsage(firstUsageBytesMetric, secondUsageBytesMetric, dur, linkCap*MegaBitsToBits, rateFlag)
+	ifUsageRatio, ifUsageBytes := calcInterfaceUsage(firstUsageBytesMetric, secondUsageBytesMetric, dur, linkCap*MegaBitsToBits)
 
-	return ifUsage, nil
+	return ifUsageRatio, ifUsageBytes, nil
 }

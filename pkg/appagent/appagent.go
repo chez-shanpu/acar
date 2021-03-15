@@ -51,10 +51,10 @@ func MakeGraph(nodesInfo *api.NodesInfo) (*dijkstra.Graph, error) {
 	graph := dijkstra.NewGraph()
 	for _, node := range nodesInfo.Nodes {
 		graph.AddMappedVertex(node.SID)
-		for _, lc := range node.LinkCosts {
+		for _, ns := range node.NextSids {
 			// RyanCarrier/dijkstra's link cost can be only integer
-			cost := int64(lc.Cost * significantDigits)
-			err := graph.AddMappedArc(node.SID, lc.NextSid, cost)
+			cost := int64(node.LinkUsageRatio * significantDigits)
+			err := graph.AddMappedArc(node.SID, ns, cost)
 			if err != nil {
 				return nil, fmt.Errorf("graph.AddMappedArc was failed: %v", err)
 			}

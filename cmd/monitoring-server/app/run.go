@@ -24,6 +24,10 @@ import (
 )
 
 const nodeinfoRedisPrefix = "sids/"
+const nextSidsKey = "NextSids"
+const linkCapKey = "linkcap"
+const usageRatioKey = "ratio"
+const usageBytesKey = "bytes"
 
 type monitoringServer struct {
 	api.UnimplementedMonitoringServerServer
@@ -138,20 +142,26 @@ func (s *monitoringServer) GetNodes(ctx context.Context, parm *api.GetNodesParam
 		sid := strings.Split(key, "/")[1]
 		n := api.Node{SID: sid}
 		res := rdb.HGetAll(ctx, key)
-		sidLcMap, err := res.Result()
+		ifInfo, err := res.Result()
 		if err != nil {
 			grpclog.Errorf("failed to get values with key %s: %v", key, err)
 			return nil, err
 		}
-		for nextSid, cost := range sidLcMap {
-			lc := api.LinkCost{}
-			lc.NextSid = nextSid
-			lc.Cost, err = strconv.ParseFloat(cost, 64)
-			if err != nil {
-				grpclog.Errorf("failed to parse float: %v", err)
-				return nil, err
-			}
-			n.LinkCosts = append(n.LinkCosts, &lc)
+		n.NextSids = strings.Split(ifInfo[nextSidsKey], ",")
+		n.LinkCap, err = strconv.ParseInt(ifInfo[linkCapKey], 10, 64)
+		if err != nil {
+			grpclog.Errorf("failed to parse linkcap: %v", err)
+			return nil, err
+		}
+		n.LinkUsageRatio, err = strconv.ParseFloat(ifInfo[usageRatioKey], 64)
+		if err != nil {
+			grpclog.Errorf("failed to parse usage-ratio: %v", err)
+			return nil, err
+		}
+		n.LinkUsageBytes, err = strconv.ParseFloat(ifInfo[usageBytesKey], 64)
+		if err != nil {
+			grpclog.Errorf("failed to parse usage-bytes: %v", err)
+			return nil, err
 		}
 		ni.Nodes = append(ni.Nodes, &n)
 	}
@@ -166,12 +176,29 @@ func (s *monitoringServer) RegisterNodes(ctx context.Context, ni *api.NodesInfo)
 	rdb := newRedisClient(redisAddr, redisPass, redisDB)
 
 	for _, node := range ni.Nodes {
-		for _, lc := range node.LinkCosts {
-			res := rdb.HSet(ctx, nodeinfoRedisPrefix+node.SID, lc.NextSid, lc.Cost)
-			_, err := res.Result()
-			if err != nil {
-				grpclog.Errorf("failed to set node-info: %v", err)
-			}
+		nextSidsStr := strings.Join(node.NextSids, ",")
+		res := rdb.HSet(ctx, nodeinfoRedisPrefix+node.SID, nextSidsKey, nextSidsStr)
+		_, err := res.Result()
+		if err != nil {
+			grpclog.Errorf("failed to set node-info: %v", err)
+		}
+
+		res = rdb.HSet(ctx, nodeinfoRedisPrefix+node.SID, linkCapKey, node.LinkCap)
+		_, err = res.Result()
+		if err != nil {
+			grpclog.Errorf("failed to set node-info: %v", err)
+		}
+
+		res = rdb.HSet(ctx, nodeinfoRedisPrefix+node.SID, usageRatioKey, node.LinkUsageRatio)
+		_, err = res.Result()
+		if err != nil {
+			grpclog.Errorf("failed to set node-info: %v", err)
+		}
+
+		res = rdb.HSet(ctx, nodeinfoRedisPrefix+node.SID, usageBytesKey, node.LinkUsageBytes)
+		_, err = res.Result()
+		if err != nil {
+			grpclog.Errorf("failed to set node-info: %v", err)
 		}
 	}
 	return &types.Result{Ok: true}, nil
