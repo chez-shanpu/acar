@@ -19,10 +19,8 @@ message NodesInfo{
 
 message Node {
   string SID = 1;
-  repeated LinkCost link_costs = 2;
-}
-
-message LinkCost {
-  string next_sid = 1;
-  double cost = 2;
+  repeated string nextSids = 2;
+  int64 linkCap = 3;
+  double linkUsageBytes = 4;
+  double linkUsageRatio = 5;
 }
