@@ -23,7 +23,9 @@ var runCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		graph, err := appagent.MakeGraph(nodesInfo)
+		metricsType := viper.GetString("app-agent.run.metrics")
+		require := viper.GetFloat64("app-agent.run.require")
+		graph, err := appagent.MakeGraph(nodesInfo, metricsType, require)
 		if err != nil {
 			fmt.Printf("[ERROR] %v", err)
 			os.Exit(1)
@@ -67,6 +69,8 @@ func init() {
 	flags.String("dst-addr", "", "destination address")
 	flags.StringSlice("dep-sid", []string{}, "the sid of the departure")
 	flags.String("dst-sid", "", "the sid of the destination")
+	flags.StringP("metrics", "", "bytes", "what metrics uses for make a graph ('ratio' and 'bytes' is now supported and default is 'bytes')")
+	flags.Float64("require", 0, "required metrics value (if 'byte' metrics is choosed, this value means required free bandwidth[bps])")
 
 	// bind flags
 	_ = viper.BindPFlag("app-agent.run.cp-addr", flags.Lookup("cp-addr"))
@@ -79,6 +83,8 @@ func init() {
 	_ = viper.BindPFlag("app-agent.run.dst-addr", flags.Lookup("dst-addr"))
 	_ = viper.BindPFlag("app-agent.run.dep-sid", flags.Lookup("dep-sid"))
 	_ = viper.BindPFlag("app-agent.run.dst-sid", flags.Lookup("dst-sid"))
+	_ = viper.BindPFlag("app-agent.run.metrics", flags.Lookup("metrics"))
+	_ = viper.BindPFlag("app-agent.run.require", flags.Lookup("require"))
 
 	// required
 	_ = runCmd.MarkFlagRequired("cp-addr")
@@ -88,4 +94,5 @@ func init() {
 	_ = runCmd.MarkFlagRequired("dst-addr")
 	_ = runCmd.MarkFlagRequired("dep-sid")
 	_ = runCmd.MarkFlagRequired("dst-sid")
+	_ = runCmd.MarkFlagRequired("require")
 }
