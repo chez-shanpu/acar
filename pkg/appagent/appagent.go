@@ -13,6 +13,10 @@ import (
 
 const significantDigits = 100000
 const startVertexName = "start"
+const ratioMetricsTypeOption = "ratio"
+const bytesMetricsTypeOption = "bytes"
+const infCost = 999999
+const byteToBit = 8.0
 
 func GetSRNodesInfo(tls bool, certFilePath, mntAddr string) (*api.NodesInfo, error) {
 	var opts []grpc.DialOption
@@ -47,13 +51,27 @@ func GetSRNodesInfo(tls bool, certFilePath, mntAddr string) (*api.NodesInfo, err
 	return nodesInfo, nil
 }
 
-func MakeGraph(nodesInfo *api.NodesInfo) (*dijkstra.Graph, error) {
+func MakeGraph(nodesInfo *api.NodesInfo, metricsType string, require float64) (*dijkstra.Graph, error) {
+	var cost int64
 	graph := dijkstra.NewGraph()
 	for _, node := range nodesInfo.Nodes {
 		graph.AddMappedVertex(node.SID)
+		if metricsType == ratioMetricsTypeOption {
+			if require <= (100 - node.LinkUsageRatio) {
+				cost = 1
+			} else {
+				cost = infCost
+			}
+		} else if metricsType == bytesMetricsTypeOption {
+			if require <= (float64(node.LinkCap)-node.LinkUsageBytes)*byteToBit {
+				cost = 1
+			} else {
+				cost = infCost
+			}
+		} else {
+			return nil, fmt.Errorf("metrics option is wrong (metrics=%s)", metricsType)
+		}
 		for _, ns := range node.NextSids {
-			// RyanCarrier/dijkstra's link cost can be only integer
-			cost := int64(node.LinkUsageRatio * significantDigits)
 			err := graph.AddMappedArc(node.SID, ns, cost)
 			if err != nil {
 				return nil, fmt.Errorf("graph.AddMappedArc was failed: %v", err)

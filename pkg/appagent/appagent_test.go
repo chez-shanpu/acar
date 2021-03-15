@@ -169,7 +169,7 @@ func Test_makeGraph(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := MakeGraph(tt.args.nodesInfo)
+			got, err := MakeGraph(tt.args.nodesInfo, "ratio", 0)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("makeGraph() error = %v, wantErr %v", err, tt.wantErr)
 				return
