@@ -69,8 +69,8 @@ func init() {
 	flags.String("dst-addr", "", "destination address")
 	flags.StringSlice("dep-sid", []string{}, "the sid of the departure")
 	flags.String("dst-sid", "", "the sid of the destination")
-	flags.StringP("metrics", "", "bytes", "what metrics uses for make a graph ('ratio' and 'bytes' is now supported and default is 'bytes')")
-	flags.Float64("require", 0, "required metrics value (if 'byte' metrics is choosed, this value means required free bandwidth[bps])")
+	flags.StringP("metrics", "", "bits", "what metrics uses for make a graph ('ratio' and 'bits' is now supported and default is 'bits')")
+	flags.Float64("require", 0, "required metrics value (if 'bits' metrics is choosed, this value means required free bandwidth[bps])")
 
 	// bind flags
 	_ = viper.BindPFlag("app-agent.run.cp-addr", flags.Lookup("cp-addr"))
