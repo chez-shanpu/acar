@@ -14,7 +14,7 @@ import (
 const significantDigits = 100000
 const startVertexName = "start"
 const ratioMetricsTypeOption = "ratio"
-const bytesMetricsTypeOption = "bytes"
+const bitsMetricsTypeOption = "bits"
 const infCost = 999999
 const byteToBit = 8.0
 
@@ -62,8 +62,8 @@ func MakeGraph(nodesInfo *api.NodesInfo, metricsType string, require float64) (*
 			} else {
 				cost = infCost
 			}
-		} else if metricsType == bytesMetricsTypeOption {
-			if require <= (float64(node.LinkCap)-node.LinkUsageBytes)*byteToBit {
+		} else if metricsType == bitsMetricsTypeOption {
+			if require <= (float64(node.LinkCap)-node.LinkUsageBytes*byteToBit) {
 				cost = 1
 			} else {
 				cost = infCost
