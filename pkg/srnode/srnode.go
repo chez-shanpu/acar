@@ -114,6 +114,10 @@ func getInterfaceIndexByName(snmp *gosnmp.GoSNMP, ifName string) (int, error) {
 		}
 
 		for _, variable := range res.Variables {
+			if variable.Value == nil {
+				continue
+			}
+
 			if variable.Type == gosnmp.OctetString || variable.Type == gosnmp.NoSuchInstance {
 				if string(variable.Value.([]uint8)) == ifName {
 					return i, nil
