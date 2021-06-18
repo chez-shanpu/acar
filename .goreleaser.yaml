@@ -1,0 +1,65 @@
+builds:
+- id: "acar-appagent"
+  dir: ./cmd/appagent
+  binary: appagent
+  goos:
+  - linux
+  - darwin
+  goarch:
+  - amd64
+  - arm
+  - arm64
+  env:
+  - CGO_ENABLED=0
+
+- id: "acar-controlplane"
+  dir: ./cmd/controlplane
+  binary: controlplane
+  goos:
+  - linux
+  - darwin
+  goarch:
+  - amd64
+  - arm
+  - arm64
+  env:
+  - CGO_ENABLED=0
+
+- id: "acar-dataplane"
+  dir: ./cmd/datapane
+  binary: dataplane
+  goos:
+  - linux
+  - darwin
+  goarch:
+  - amd64
+  - arm
+  - arm64
+  env:
+  - CGO_ENABLED=0
+
+- id: "acar-monitoring-server"
+  dir: ./cmd/monitoring-server
+  binary: monitoring-server
+  goos:
+  - linux
+  - darwin
+  goarch:
+  - amd64
+  - arm
+  - arm64
+  env:
+  - CGO_ENABLED=0
+
+- id: "acar-srnode-agent"
+  dir: ./cmd/srnode-agent
+  binary: srnode-agent
+  goos:
+  - linux
+  - darwin
+  goarch:
+  - amd64
+  - arm
+  - arm64
+  env:
+  - CGO_ENABLED=0
