@@ -6,6 +6,6 @@ RUN go build -o bin/monitoring-server ./cmd/monitoring-server
 
 
 FROM gcr.io/distroless/base-debian10
-COPY --from=builder /go/src/github.com/chez-shanpu/traffic-generator/bin/monitoring-server /
+COPY --from=builder /go/src/github.com/chez-shanpu/acar/bin/monitoring-server /
 ENTRYPOINT ["/monitoring-server"]
 CMD ["--help"]

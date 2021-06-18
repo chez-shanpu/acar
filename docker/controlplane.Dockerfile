@@ -6,6 +6,6 @@ RUN go build -o bin/controlplane ./cmd/controlplane
 
 
 FROM gcr.io/distroless/base-debian10
-COPY --from=builder /go/src/github.com/chez-shanpu/traffic-generator/bin/controlplane /
+COPY --from=builder /go/src/github.com/chez-shanpu/acar/bin/controlplane /
 ENTRYPOINT ["/controlplane"]
 CMD ["--help"]
