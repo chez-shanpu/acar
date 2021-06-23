@@ -4,7 +4,6 @@ builds:
   binary: appagent
   goos:
   - linux
-  - darwin
   goarch:
   - amd64
   - arm
@@ -17,7 +16,6 @@ builds:
   binary: controlplane
   goos:
   - linux
-  - darwin
   goarch:
   - amd64
   - arm
@@ -26,11 +24,10 @@ builds:
   - CGO_ENABLED=0
 
 - id: "acar-dataplane"
-  dir: ./cmd/datapane
+  dir: ./cmd/dataplane
   binary: dataplane
   goos:
   - linux
-  - darwin
   goarch:
   - amd64
   - arm
@@ -43,7 +40,6 @@ builds:
   binary: monitoring-server
   goos:
   - linux
-  - darwin
   goarch:
   - amd64
   - arm
@@ -56,7 +52,6 @@ builds:
   binary: srnode-agent
   goos:
   - linux
-  - darwin
   goarch:
   - amd64
   - arm
