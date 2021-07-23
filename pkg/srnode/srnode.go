@@ -17,7 +17,7 @@ const MegaBitsToBits = 1000000
 const ifHighSpeedOID = "1.3.6.1.2.1.31.1.1.1.15"
 const ifHCInOctetsOID = "1.3.6.1.2.1.31.1.1.1.6"
 const ifHCOutOctetsOID = "1.3.6.1.2.1.31.1.1.1.10"
-const ifNumberOID = "1.3.6.1.2.1.2.1.0"
+const ifIndexOID = "1.3.6.1.2.1.2.2.1.1"
 const ifDescrOID = "1.3.6.1.2.1.2.2.1.2"
 
 type NetworkInterface struct {
@@ -92,23 +92,22 @@ func getInterfaceIndexByName(snmp *gosnmp.GoSNMP, ifName string) (int, error) {
 	}
 	defer snmp.Conn.Close()
 
-	oids := []string{ifNumberOID}
-	res, err := snmp.Get(oids)
+	res, err := snmp.WalkAll(ifIndexOID)
 	if err != nil {
 		return 0, fmt.Errorf("failed get interface number from snmp agent: %v", err)
 	}
 
-	var maxIfIndex int
-	for _, variable := range res.Variables {
-		if variable.Type != gosnmp.Integer {
-			return 0, fmt.Errorf("variable type is wrong correct %v, got %v", gosnmp.Integer, variable.Type)
+	var indexSlice []int
+	for _, v := range res {
+		if v.Type != gosnmp.Integer {
+			return 0, fmt.Errorf("variable type is wrong correct %v, got %v", gosnmp.Integer, v.Type)
 		}
-		maxIfIndex = int(gosnmp.ToBigInt(variable.Value).Int64())
+		indexSlice = append(indexSlice, int(gosnmp.ToBigInt(v.Value).Int64()))
 	}
 
-	for i := 1; i <= maxIfIndex; i++ {
-		oids = []string{fmt.Sprintf("%s.%d", ifDescrOID, i)}
-		res, err = snmp.Get(oids)
+	for _, i := range indexSlice {
+		oids := []string{fmt.Sprintf("%s.%d", ifDescrOID, i)}
+		res, err := snmp.Get(oids)
 		if err != nil {
 			return 0, fmt.Errorf("failed get interface name from snmp agent: %v", err)
 		}
