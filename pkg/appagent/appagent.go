@@ -16,7 +16,7 @@ const startVertexName = "start"
 const ratioMetricsTypeOption = "ratio"
 const bytesMetricsTypeOption = "bytes"
 const infCost = 999999
-const byteToBit = 8.0
+const byteToBit = 8
 
 func GetSRNodesInfo(tls bool, certFilePath, mntAddr string) (*api.NodesInfo, error) {
 	var opts []grpc.DialOption
@@ -63,7 +63,7 @@ func MakeGraph(nodesInfo *api.NodesInfo, metricsType string, require float64) (*
 				cost = infCost
 			}
 		} else if metricsType == bytesMetricsTypeOption {
-			if require <= (float64(node.LinkCap)-node.LinkUsageBytes)*byteToBit {
+			if int64(require) <= (node.LinkCap - int64(node.LinkUsageBytes*byteToBit)) {
 				cost = 1
 			} else {
 				cost = infCost
