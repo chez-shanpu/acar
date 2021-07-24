@@ -3,6 +3,7 @@ package appagent
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/RyanCarrier/dijkstra"
@@ -72,6 +73,7 @@ func MakeGraph(nodesInfo *api.NodesInfo, metricsType string, require float64) (*
 			return nil, fmt.Errorf("metrics option is wrong (metrics=%s)", metricsType)
 		}
 		for _, ns := range node.NextSids {
+			log.Printf("sid: %s, next_sid: %s, cost: %d \n", node.SID, ns, cost)
 			err := graph.AddMappedArc(node.SID, ns, cost)
 			if err != nil {
 				return nil, fmt.Errorf("graph.AddMappedArc was failed: %v", err)
