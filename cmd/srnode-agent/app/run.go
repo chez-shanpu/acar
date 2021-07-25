@@ -40,19 +40,22 @@ var runCmd = &cobra.Command{
 		snmpAuthPass := viper.GetString("srnode-agent.run.snmp-auth-pass")
 		snmpPrivPass := viper.GetString("srnode-agent.run.snmp-priv-pass")
 		interval := viper.GetInt("srnode-agent.run.interval")
-		nodes, err := srnode.GatherMetricsBySNMP(c.NetworkInterfaces, interval, srnodeAddr, srnodePort, snmpUser, snmpAuthPass, snmpPrivPass)
-		if err != nil {
-			fmt.Printf("failed to gather metrics by snmp: %v", err)
-			os.Exit(1)
-		}
-
 		tls := viper.GetBool("srnode-agent.run.tls")
 		certFilePath := viper.GetString("srnode-agent.run.cert-path")
 		mntAddr := viper.GetString("srnode-agent.run.mnt-addr")
-		err = sendToMonitoringServer(tls, certFilePath, mntAddr, &api.NodesInfo{Nodes: nodes})
-		if err != nil {
-			fmt.Printf("failed to send metrics to monitoring server: %v", err)
-			os.Exit(1)
+
+		for {
+			nodes, err := srnode.GatherMetricsBySNMP(c.NetworkInterfaces, interval, srnodeAddr, srnodePort, snmpUser, snmpAuthPass, snmpPrivPass)
+			if err != nil {
+				fmt.Printf("failed to gather metrics by snmp: %v", err)
+				os.Exit(1)
+			}
+
+			err = sendToMonitoringServer(tls, certFilePath, mntAddr, &api.NodesInfo{Nodes: nodes})
+			if err != nil {
+				fmt.Printf("failed to send metrics to monitoring server: %v", err)
+				os.Exit(1)
+			}
 		}
 	},
 }
