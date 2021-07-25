@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/chez-shanpu/acar/pkg/appagent"
 	"github.com/spf13/cobra"
@@ -17,38 +18,43 @@ var runCmd = &cobra.Command{
 		mntTLSFlag := viper.GetBool("app-agent.run.mnt-tls")
 		mntCertFilePath := viper.GetString("app-agent.run.mnt-cert-path")
 		mntAddr := viper.GetString("app-agent.run.mnt-addr")
-		nodesInfo, err := appagent.GetSRNodesInfo(mntTLSFlag, mntCertFilePath, mntAddr)
-		if err != nil {
-			fmt.Printf("[ERROR] %v", err)
-			os.Exit(1)
-		}
-
 		metricsType := viper.GetString("app-agent.run.metrics")
 		require := viper.GetFloat64("app-agent.run.require")
-		graph, err := appagent.MakeGraph(nodesInfo, metricsType, require)
-		if err != nil {
-			fmt.Printf("[ERROR] %v", err)
-			os.Exit(1)
-		}
-
 		depSids := viper.GetStringSlice("app-agent.run.dep-sid")
 		dstSid := viper.GetString("app-agent.run.dst-sid")
-		list, err := appagent.MakeSIDList(graph, depSids, dstSid)
-		if err != nil {
-			fmt.Printf("[ERROR] %v", err)
-			os.Exit(1)
-		}
-
 		tls := viper.GetBool("app-agent.run.cp-tls")
 		cpCertFilePath := viper.GetString("app-agent.run.cp-cert-path")
 		cpAddr := viper.GetString("app-agent.run.cp-addr")
 		appName := viper.GetString("app-agent.run.app-name")
 		srcAddr := viper.GetString("app-agent.run.src-addr")
 		dstAddr := viper.GetString("app-agent.run.dst-addr")
-		err = appagent.SendSRInfoToControlPlane(list, tls, cpCertFilePath, cpAddr, appName, srcAddr, dstAddr)
-		if err != nil {
-			fmt.Printf("[ERROR] %v", err)
-			os.Exit(1)
+		interval := viper.GetInt64("app-agent.run.interval")
+
+		for {
+			nodesInfo, err := appagent.GetSRNodesInfo(mntTLSFlag, mntCertFilePath, mntAddr)
+			if err != nil {
+				fmt.Printf("[ERROR] %v", err)
+				os.Exit(1)
+			}
+
+			graph, err := appagent.MakeGraph(nodesInfo, metricsType, require)
+			if err != nil {
+				fmt.Printf("[ERROR] %v", err)
+				os.Exit(1)
+			}
+
+			list, err := appagent.MakeSIDList(graph, depSids, dstSid)
+			if err != nil {
+				fmt.Printf("[ERROR] %v", err)
+				os.Exit(1)
+			}
+
+			err = appagent.SendSRInfoToControlPlane(list, tls, cpCertFilePath, cpAddr, appName, srcAddr, dstAddr)
+			if err != nil {
+				fmt.Printf("[ERROR] %v", err)
+				os.Exit(1)
+			}
+			time.Sleep(time.Duration(interval) * time.Millisecond)
 		}
 	},
 }
@@ -71,6 +77,7 @@ func init() {
 	flags.String("dst-sid", "", "the sid of the destination")
 	flags.StringP("metrics", "", "bytes", "what metrics uses for make a graph ('ratio' and 'bytes' is now supported and default is 'bytes')")
 	flags.Float64("require", 0, "required metrics value (if 'byte' metrics is choosed, this value means required free bandwidth[bps])")
+	flags.Int64P("interval", "i", 1000, "interval to send sid list (msec)")
 
 	// bind flags
 	_ = viper.BindPFlag("app-agent.run.cp-addr", flags.Lookup("cp-addr"))
@@ -85,6 +92,7 @@ func init() {
 	_ = viper.BindPFlag("app-agent.run.dst-sid", flags.Lookup("dst-sid"))
 	_ = viper.BindPFlag("app-agent.run.metrics", flags.Lookup("metrics"))
 	_ = viper.BindPFlag("app-agent.run.require", flags.Lookup("require"))
+	_ = viper.BindPFlag("app-agent.run.interval", flags.Lookup("interval"))
 
 	// required
 	_ = runCmd.MarkFlagRequired("cp-addr")
