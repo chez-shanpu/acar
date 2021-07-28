@@ -48,11 +48,15 @@ var runCmd = &cobra.Command{
 				fmt.Printf("[ERROR] %v", err)
 				os.Exit(1)
 			}
-
-			err = appagent.SendSRInfoToControlPlane(list, tls, cpCertFilePath, cpAddr, appName, srcAddr, dstAddr)
-			if err != nil {
-				fmt.Printf("[ERROR] %v", err)
-				os.Exit(1)
+			//If there is the best path, it sends that path to control plane
+			if list != nil {
+				err = appagent.SendSRInfoToControlPlane(list, tls, cpCertFilePath, cpAddr, appName, srcAddr, dstAddr)
+				if err != nil {
+					fmt.Printf("[ERROR] %v", err)
+					os.Exit(1)
+				}
+			} else {
+				fmt.Println("[INFO] No list was sent.")
 			}
 			time.Sleep(time.Duration(interval) * time.Millisecond)
 		}

@@ -101,6 +101,11 @@ func MakeSIDList(graph *dijkstra.Graph, depSids []string, dstSid string) (*[]str
 	if err != nil {
 		return nil, fmt.Errorf("failed to searching shortest path: %v", err)
 	}
+	// if there is no best path, it returns nil
+	if best.Distance >= infCost {
+		fmt.Printf("[INFO] There is no best path. cost: %v \n", best.Distance)
+		return nil, nil
+	}
 
 	var sids []string
 	for _, verIndex := range best.Path {
