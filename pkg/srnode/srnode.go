@@ -15,7 +15,7 @@ import (
 const BytesToBits = 8.0
 const MegaBitsToBits = 1000000
 const ifHighSpeedOID = "1.3.6.1.2.1.31.1.1.1.15"
-const ifHCInOctetsOID = "1.3.6.1.2.1.31.1.1.1.6"
+const ifHCOutOctetsOID = "1.3.6.1.2.1.31.1.1.1.10"
 const ifIndexOID = "1.3.6.1.2.1.2.2.1.1"
 const ifDescrOID = "1.3.6.1.2.1.2.2.1.2"
 
@@ -158,7 +158,7 @@ func getInterfaceUsageBytes(snmp *gosnmp.GoSNMP, ifIndex int) (int64, error) {
 	}
 	defer snmp.Conn.Close()
 
-	oids := []string{fmt.Sprintf("%s.%d", ifHCInOctetsOID, ifIndex)}
+	oids := []string{fmt.Sprintf("%s.%d", ifHCOutOctetsOID, ifIndex)}
 	res, err := snmp.Get(oids)
 	if err != nil {
 		return 0, fmt.Errorf("failed get metrics from snmp agent: %v", err)
