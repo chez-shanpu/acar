@@ -5,7 +5,6 @@ package api
 import (
 	context "context"
 
-	types "github.com/chez-shanpu/acar/api/types"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -13,13 +12,14 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
+// Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
 // ControlPlaneClient is the client API for ControlPlane service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ControlPlaneClient interface {
-	RegisterSRPolicy(ctx context.Context, in *AppInfo, opts ...grpc.CallOption) (*types.Result, error)
+	RegisterSRPolicy(ctx context.Context, in *RegisterSRPolicyRequest, opts ...grpc.CallOption) (*RegisterSRPolicyResponse, error)
 }
 
 type controlPlaneClient struct {
@@ -30,8 +30,8 @@ func NewControlPlaneClient(cc grpc.ClientConnInterface) ControlPlaneClient {
 	return &controlPlaneClient{cc}
 }
 
-func (c *controlPlaneClient) RegisterSRPolicy(ctx context.Context, in *AppInfo, opts ...grpc.CallOption) (*types.Result, error) {
-	out := new(types.Result)
+func (c *controlPlaneClient) RegisterSRPolicy(ctx context.Context, in *RegisterSRPolicyRequest, opts ...grpc.CallOption) (*RegisterSRPolicyResponse, error) {
+	out := new(RegisterSRPolicyResponse)
 	err := c.cc.Invoke(ctx, "/acar.ControlPlane/RegisterSRPolicy", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func (c *controlPlaneClient) RegisterSRPolicy(ctx context.Context, in *AppInfo, 
 // All implementations must embed UnimplementedControlPlaneServer
 // for forward compatibility
 type ControlPlaneServer interface {
-	RegisterSRPolicy(context.Context, *AppInfo) (*types.Result, error)
+	RegisterSRPolicy(context.Context, *RegisterSRPolicyRequest) (*RegisterSRPolicyResponse, error)
 	mustEmbedUnimplementedControlPlaneServer()
 }
 
@@ -51,7 +51,7 @@ type ControlPlaneServer interface {
 type UnimplementedControlPlaneServer struct {
 }
 
-func (UnimplementedControlPlaneServer) RegisterSRPolicy(context.Context, *AppInfo) (*types.Result, error) {
+func (UnimplementedControlPlaneServer) RegisterSRPolicy(context.Context, *RegisterSRPolicyRequest) (*RegisterSRPolicyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RegisterSRPolicy not implemented")
 }
 func (UnimplementedControlPlaneServer) mustEmbedUnimplementedControlPlaneServer() {}
@@ -64,11 +64,11 @@ type UnsafeControlPlaneServer interface {
 }
 
 func RegisterControlPlaneServer(s grpc.ServiceRegistrar, srv ControlPlaneServer) {
-	s.RegisterService(&_ControlPlane_serviceDesc, srv)
+	s.RegisterService(&ControlPlane_ServiceDesc, srv)
 }
 
 func _ControlPlane_RegisterSRPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AppInfo)
+	in := new(RegisterSRPolicyRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -80,12 +80,15 @@ func _ControlPlane_RegisterSRPolicy_Handler(srv interface{}, ctx context.Context
 		FullMethod: "/acar.ControlPlane/RegisterSRPolicy",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ControlPlaneServer).RegisterSRPolicy(ctx, req.(*AppInfo))
+		return srv.(ControlPlaneServer).RegisterSRPolicy(ctx, req.(*RegisterSRPolicyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-var _ControlPlane_serviceDesc = grpc.ServiceDesc{
+// ControlPlane_ServiceDesc is the grpc.ServiceDesc for ControlPlane service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var ControlPlane_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "acar.ControlPlane",
 	HandlerType: (*ControlPlaneServer)(nil),
 	Methods: []grpc.MethodDesc{

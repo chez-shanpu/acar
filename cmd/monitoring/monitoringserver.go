@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/chez-shanpu/acar/cmd/monitoring-server/app"
+	"github.com/chez-shanpu/acar/cmd/monitoring/app"
 )
 
 func main() {

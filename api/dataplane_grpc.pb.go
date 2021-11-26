@@ -5,7 +5,6 @@ package api
 import (
 	context "context"
 
-	types "github.com/chez-shanpu/acar/api/types"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -13,13 +12,14 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
+// Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
 // DataPlaneClient is the client API for DataPlane service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DataPlaneClient interface {
-	ApplySRPolicy(ctx context.Context, in *SRInfo, opts ...grpc.CallOption) (*types.Result, error)
+	ApplySRPolicy(ctx context.Context, in *ApplySRPolicyRequest, opts ...grpc.CallOption) (*ApplySRPolicyResponse, error)
 }
 
 type dataPlaneClient struct {
@@ -30,8 +30,8 @@ func NewDataPlaneClient(cc grpc.ClientConnInterface) DataPlaneClient {
 	return &dataPlaneClient{cc}
 }
 
-func (c *dataPlaneClient) ApplySRPolicy(ctx context.Context, in *SRInfo, opts ...grpc.CallOption) (*types.Result, error) {
-	out := new(types.Result)
+func (c *dataPlaneClient) ApplySRPolicy(ctx context.Context, in *ApplySRPolicyRequest, opts ...grpc.CallOption) (*ApplySRPolicyResponse, error) {
+	out := new(ApplySRPolicyResponse)
 	err := c.cc.Invoke(ctx, "/acar.DataPlane/ApplySRPolicy", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func (c *dataPlaneClient) ApplySRPolicy(ctx context.Context, in *SRInfo, opts ..
 // All implementations must embed UnimplementedDataPlaneServer
 // for forward compatibility
 type DataPlaneServer interface {
-	ApplySRPolicy(context.Context, *SRInfo) (*types.Result, error)
+	ApplySRPolicy(context.Context, *ApplySRPolicyRequest) (*ApplySRPolicyResponse, error)
 	mustEmbedUnimplementedDataPlaneServer()
 }
 
@@ -51,7 +51,7 @@ type DataPlaneServer interface {
 type UnimplementedDataPlaneServer struct {
 }
 
-func (UnimplementedDataPlaneServer) ApplySRPolicy(context.Context, *SRInfo) (*types.Result, error) {
+func (UnimplementedDataPlaneServer) ApplySRPolicy(context.Context, *ApplySRPolicyRequest) (*ApplySRPolicyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ApplySRPolicy not implemented")
 }
 func (UnimplementedDataPlaneServer) mustEmbedUnimplementedDataPlaneServer() {}
@@ -64,11 +64,11 @@ type UnsafeDataPlaneServer interface {
 }
 
 func RegisterDataPlaneServer(s grpc.ServiceRegistrar, srv DataPlaneServer) {
-	s.RegisterService(&_DataPlane_serviceDesc, srv)
+	s.RegisterService(&DataPlane_ServiceDesc, srv)
 }
 
 func _DataPlane_ApplySRPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SRInfo)
+	in := new(ApplySRPolicyRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -80,12 +80,15 @@ func _DataPlane_ApplySRPolicy_Handler(srv interface{}, ctx context.Context, dec 
 		FullMethod: "/acar.DataPlane/ApplySRPolicy",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DataPlaneServer).ApplySRPolicy(ctx, req.(*SRInfo))
+		return srv.(DataPlaneServer).ApplySRPolicy(ctx, req.(*ApplySRPolicyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-var _DataPlane_serviceDesc = grpc.ServiceDesc{
+// DataPlane_ServiceDesc is the grpc.ServiceDesc for DataPlane service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var DataPlane_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "acar.DataPlane",
 	HandlerType: (*DataPlaneServer)(nil),
 	Methods: []grpc.MethodDesc{

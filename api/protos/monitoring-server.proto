@@ -4,17 +4,26 @@ package acar;
 
 option go_package = "github.com/chez-shanpu/acar/api";
 
-import "types/result.proto";
+import "google/protobuf/timestamp.proto";
 
-service MonitoringServer{
-  rpc GetNodes(GetNodesParams) returns(NodesInfo);
-  rpc RegisterNodes(NodesInfo) returns(types.Result);
+service Monitoring{
+  rpc GetNodes(GetNodesRequest) returns(GetNodesResponse);
+  rpc RegisterNodes(RegisterNodesRequest) returns(RegisterNodesResponse);
 }
 
-message GetNodesParams{}
+message GetNodesRequest{}
 
-message NodesInfo{
+message GetNodesResponse{
   repeated Node nodes = 1;
+  google.protobuf.Timestamp time = 2;
+}
+
+message RegisterNodesRequest{
+  repeated Node nodes = 1;
+}
+
+message RegisterNodesResponse{
+  google.protobuf.Timestamp time = 2;
 }
 
 message Node {

@@ -5,7 +5,7 @@ WORKDIR ${PROJECT_DIR}/
 RUN go build -o bin/dataplane ./cmd/dataplane
 
 
-FROM gcr.io/distroless/base-debian10
+FROM ubuntu:focal
 COPY --from=builder /go/src/github.com/chez-shanpu/acar/bin/dataplane /
 ENTRYPOINT ["/dataplane"]
 CMD ["--help"]

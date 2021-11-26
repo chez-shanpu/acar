@@ -5,7 +5,7 @@ WORKDIR ${PROJECT_DIR}/
 RUN go build -o bin/monitoring-server ./cmd/monitoring-server
 
 
-FROM gcr.io/distroless/base-debian10
+FROM ubuntu:focal
 COPY --from=builder /go/src/github.com/chez-shanpu/acar/bin/monitoring-server /
 ENTRYPOINT ["/monitoring-server"]
 CMD ["--help"]

@@ -1,11 +1,14 @@
 package srnode
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"math/big"
 	"sync"
 	"time"
+
+	"github.com/chez-shanpu/acar/pkg/grpc"
 
 	"github.com/chez-shanpu/acar/api"
 	"github.com/gosnmp/gosnmp"
@@ -26,27 +29,27 @@ type NetworkInterface struct {
 	LinkCap       int64
 }
 
-func GatherMetricsBySNMP(networkInterfaces []*NetworkInterface, interval int, srnodeAddr string, srnodePort uint16, snmpUser, snmpAuthPass, snmpPrivPass string) ([]*api.Node, error) {
+func GatherMetricsBySNMP() ([]*api.Node, error) {
 	var eg errgroup.Group
 	var nodes []*api.Node
 
 	mutex := &sync.Mutex{}
-	for _, ni := range networkInterfaces {
+	for _, ni := range Config.NetworkInterfaces {
 		ni := ni
-		sc := newSNMPClient(srnodeAddr, srnodePort, snmpUser, snmpAuthPass, snmpPrivPass)
 		eg.Go(func() error {
 			return func(ni *NetworkInterface) error {
+				sc := newSNMPClient(Config.Addr, Config.Port, Config.SNMPUser, Config.SNMPAuthPass, Config.SNMPPrivPass)
 				ifIndex, err := getInterfaceIndexByName(sc, ni.InterfaceName)
 				if err != nil {
 					return err
 				}
 
-				usageRatio, usageBytes, err := getInterfaceUsageBySNMP(sc, ifIndex, interval, ni.LinkCap)
+				usageRatio, usageBytes, err := getInterfaceUsageBySNMP(sc, ifIndex, Config.Interval, ni.LinkCap)
 				if err != nil {
 					return err
 				}
 
-				node := api.Node{
+				node := &api.Node{
 					SID:            ni.Sid,
 					NextSids:       ni.NextSids,
 					LinkCap:        ni.LinkCap,
@@ -54,7 +57,7 @@ func GatherMetricsBySNMP(networkInterfaces []*NetworkInterface, interval int, sr
 					LinkUsageBytes: usageBytes,
 				}
 				mutex.Lock()
-				nodes = append(nodes, &node)
+				nodes = append(nodes, node)
 				mutex.Unlock()
 				return nil
 			}(ni)
@@ -66,10 +69,25 @@ func GatherMetricsBySNMP(networkInterfaces []*NetworkInterface, interval int, sr
 	return nodes, nil
 }
 
-func newSNMPClient(addr string, port uint16, user, authPass, privPass string) *gosnmp.GoSNMP {
+func SendToMonitoringServer(ns []*api.Node) error {
+	conn, err := grpc.MakeConn(Config.MonitoringAddr, Config.TLS, Config.TLSCert)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	c := api.NewMonitoringClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	_, err = c.RegisterNodes(ctx, &api.RegisterNodesRequest{Nodes: ns})
+	return err
+}
+
+func newSNMPClient(addr string, port int, user, authPass, privPass string) *gosnmp.GoSNMP {
 	return &gosnmp.GoSNMP{
 		Target:        addr,
-		Port:          port,
+		Port:          uint16(port),
 		Version:       gosnmp.Version3,
 		SecurityModel: gosnmp.UserSecurityModel,
 		MsgFlags:      gosnmp.AuthPriv,
@@ -108,7 +126,7 @@ func getInterfaceIndexByName(snmp *gosnmp.GoSNMP, ifName string) (int, error) {
 		oids := []string{fmt.Sprintf("%s.%d", ifDescrOID, i)}
 		res, err := snmp.Get(oids)
 		if err != nil {
-			return 0, fmt.Errorf("failed get interface name from snmp agent: %v", err)
+			return 0, fmt.Errorf("failed to get interface name from snmp agent: %v", err)
 		}
 
 		for _, variable := range res.Variables {
@@ -151,10 +169,42 @@ func getInterfaceCapacity(snmp *gosnmp.GoSNMP, ifIndex int) (int64, error) {
 	return linkCapBits, nil
 }
 
+func getInterfaceUsageBySNMP(snmp *gosnmp.GoSNMP, ifIndex, secInterval int, linkCap int64) (float64, float64, error) {
+	if linkCap <= 0 {
+		var err error
+		linkCap, err = getInterfaceCapacity(snmp, ifIndex)
+		if err != nil {
+			return 0, 0, err
+		}
+	}
+	// first
+	firstUsageBytesMetric, err := getInterfaceUsageBytes(snmp, ifIndex)
+	if err != nil {
+		return 0, 0, err
+	}
+	firstGetTime := time.Now()
+
+	// wait
+	time.Sleep(time.Duration(secInterval) * time.Second)
+
+	// second
+	secondUsageBytesMetric, err := getInterfaceUsageBytes(snmp, ifIndex)
+	if err != nil {
+		return 0, 0, err
+	}
+	secondGetTime := time.Now()
+
+	// calcurate
+	dur := secondGetTime.Sub(firstGetTime).Seconds()
+	ifUsageRatio, ifUsageBytes := calcInterfaceUsage(firstUsageBytesMetric, secondUsageBytesMetric, dur, linkCap*MegaBitsToBits)
+
+	return ifUsageRatio, ifUsageBytes, nil
+}
+
 func getInterfaceUsageBytes(snmp *gosnmp.GoSNMP, ifIndex int) (int64, error) {
 	err := snmp.Connect()
 	if err != nil {
-		log.Fatalf("Connect() err: %v", err)
+		return 0, err
 	}
 	defer snmp.Conn.Close()
 
@@ -188,36 +238,4 @@ func calcInterfaceUsage(firstBytes, secondBytes int64, duration float64, linkCap
 	}
 
 	return ifUsageRatio, ifUsageBytes
-}
-
-func getInterfaceUsageBySNMP(snmp *gosnmp.GoSNMP, ifIndex, secInterval int, linkCap int64) (float64, float64, error) {
-	if linkCap <= 0 {
-		var err error
-		linkCap, err = getInterfaceCapacity(snmp, ifIndex)
-		if err != nil {
-			return 0, 0, err
-		}
-	}
-	// first
-	firstUsageBytesMetric, err := getInterfaceUsageBytes(snmp, ifIndex)
-	if err != nil {
-		return 0, 0, err
-	}
-	firstGetTime := time.Now()
-
-	// wait
-	time.Sleep(time.Duration(secInterval) * time.Second)
-
-	// second
-	secondUsageBytesMetric, err := getInterfaceUsageBytes(snmp, ifIndex)
-	if err != nil {
-		return 0, 0, err
-	}
-	secondGetTime := time.Now()
-
-	// calcurate
-	dur := secondGetTime.Sub(firstGetTime).Seconds()
-	ifUsageRatio, ifUsageBytes := calcInterfaceUsage(firstUsageBytesMetric, secondUsageBytesMetric, dur, linkCap*MegaBitsToBits)
-
-	return ifUsageRatio, ifUsageBytes, nil
 }

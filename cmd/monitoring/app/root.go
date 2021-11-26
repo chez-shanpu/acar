@@ -7,13 +7,14 @@ import (
 	"runtime"
 
 	"github.com/chez-shanpu/acar/api"
-	"github.com/chez-shanpu/acar/pkg/dataplane"
 	"github.com/chez-shanpu/acar/pkg/grpc"
+	"github.com/chez-shanpu/acar/pkg/monitoring"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 var (
+	// set these value as go build -ldflags option
 	// Version is version number which automatically set on build. `git describe --tags`
 	Version string
 	// Revision is git commit hash which automatically set `git rev-parse --short HEAD` on build.
@@ -26,27 +27,28 @@ var (
 func init() {
 	// flags
 	flags := rootCmd.Flags()
-	flags.StringP(dataplane.ServerAddr, "a", "localhost:18080", "server address")
-	flags.BoolP(dataplane.TLS, "t", false, "tls flag")
-	flags.String(dataplane.TLSCert, "", "path to cert file (this option is enabled when tls flag is true)")
-	flags.String(dataplane.TLSKey, "", "path to key file (this option is enabled when tls flag is true)")
-	flags.StringP(dataplane.Device, "d", "", "NIC device name")
+	flags.String(monitoring.RedisAddr, "localhost:6379", "redis server address")
+	flags.String(monitoring.RedisPass, "password", "redis password")
+	flags.Int(monitoring.RedisDB, 1, "redis db number")
+	flags.BoolP(monitoring.TLS, "t", false, "tls flag")
+	flags.String(monitoring.TLSCert, "", "path to cert file (this option is enabled when tls flag is true)")
+	flags.String(monitoring.TLSKey, "", "path to key file (this option is enabled when tls flag is true)")
+	flags.StringP(monitoring.ServerAddr, "a", "localhost", "server address")
 
 	_ = viper.BindPFlags(flags)
 
 	// required
-	_ = rootCmd.MarkFlagRequired(dataplane.Device)
-	_ = rootCmd.MarkFlagRequired(dataplane.ServerAddr)
+	_ = rootCmd.MarkFlagRequired("addr")
 }
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "dataplane",
-	Short: "acar dataplane server",
-	Version: fmt.Sprintf("acar dataplane server Version: %s (Revision: %s / GoVersion: %s / Compiler: %s)\n",
+	Use:   "monitoring-server",
+	Short: "acar monitoring server",
+	Version: fmt.Sprintf("acar monitoring server Version: %s (Revision: %s / GoVersion: %s / Compiler: %s)\n",
 		Version, Revision, GoVersion, Compiler),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		dataplane.Config.Populate()
+		monitoring.Config.Populate()
 		return runServer()
 	},
 }
@@ -61,13 +63,13 @@ func Execute() {
 }
 
 func runServer() error {
-	s, err := grpc.MakeServer(dataplane.Config.TLS, dataplane.Config.TLSCert, dataplane.Config.TLSKey)
+	s, err := grpc.MakeServer(monitoring.Config.TLS, monitoring.Config.TLSCert, monitoring.Config.TLSKey)
 	if err != nil {
 		return err
 	}
-	api.RegisterDataPlaneServer(s, dataplane.NewServer())
+	api.RegisterMonitoringServer(s, monitoring.NewServer())
 
-	lis, err := net.Listen("tcp", dataplane.Config.ServerAddr)
+	lis, err := net.Listen("tcp", monitoring.Config.ServerAddr)
 	if err != nil {
 		return err
 	}

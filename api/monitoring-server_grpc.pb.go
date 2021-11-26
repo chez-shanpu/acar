@@ -5,7 +5,6 @@ package api
 import (
 	context "context"
 
-	types "github.com/chez-shanpu/acar/api/types"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -13,121 +12,125 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
+// Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
-// MonitoringServerClient is the client API for MonitoringServer service.
+// MonitoringClient is the client API for Monitoring service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type MonitoringServerClient interface {
-	GetNodes(ctx context.Context, in *GetNodesParams, opts ...grpc.CallOption) (*NodesInfo, error)
-	RegisterNodes(ctx context.Context, in *NodesInfo, opts ...grpc.CallOption) (*types.Result, error)
+type MonitoringClient interface {
+	GetNodes(ctx context.Context, in *GetNodesRequest, opts ...grpc.CallOption) (*GetNodesResponse, error)
+	RegisterNodes(ctx context.Context, in *RegisterNodesRequest, opts ...grpc.CallOption) (*RegisterNodesResponse, error)
 }
 
-type monitoringServerClient struct {
+type monitoringClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewMonitoringServerClient(cc grpc.ClientConnInterface) MonitoringServerClient {
-	return &monitoringServerClient{cc}
+func NewMonitoringClient(cc grpc.ClientConnInterface) MonitoringClient {
+	return &monitoringClient{cc}
 }
 
-func (c *monitoringServerClient) GetNodes(ctx context.Context, in *GetNodesParams, opts ...grpc.CallOption) (*NodesInfo, error) {
-	out := new(NodesInfo)
-	err := c.cc.Invoke(ctx, "/acar.MonitoringServer/GetNodes", in, out, opts...)
+func (c *monitoringClient) GetNodes(ctx context.Context, in *GetNodesRequest, opts ...grpc.CallOption) (*GetNodesResponse, error) {
+	out := new(GetNodesResponse)
+	err := c.cc.Invoke(ctx, "/acar.Monitoring/GetNodes", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *monitoringServerClient) RegisterNodes(ctx context.Context, in *NodesInfo, opts ...grpc.CallOption) (*types.Result, error) {
-	out := new(types.Result)
-	err := c.cc.Invoke(ctx, "/acar.MonitoringServer/RegisterNodes", in, out, opts...)
+func (c *monitoringClient) RegisterNodes(ctx context.Context, in *RegisterNodesRequest, opts ...grpc.CallOption) (*RegisterNodesResponse, error) {
+	out := new(RegisterNodesResponse)
+	err := c.cc.Invoke(ctx, "/acar.Monitoring/RegisterNodes", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// MonitoringServerServer is the server API for MonitoringServer service.
-// All implementations must embed UnimplementedMonitoringServerServer
+// MonitoringServer is the server API for Monitoring service.
+// All implementations must embed UnimplementedMonitoringServer
 // for forward compatibility
-type MonitoringServerServer interface {
-	GetNodes(context.Context, *GetNodesParams) (*NodesInfo, error)
-	RegisterNodes(context.Context, *NodesInfo) (*types.Result, error)
-	mustEmbedUnimplementedMonitoringServerServer()
+type MonitoringServer interface {
+	GetNodes(context.Context, *GetNodesRequest) (*GetNodesResponse, error)
+	RegisterNodes(context.Context, *RegisterNodesRequest) (*RegisterNodesResponse, error)
+	mustEmbedUnimplementedMonitoringServer()
 }
 
-// UnimplementedMonitoringServerServer must be embedded to have forward compatible implementations.
-type UnimplementedMonitoringServerServer struct {
+// UnimplementedMonitoringServer must be embedded to have forward compatible implementations.
+type UnimplementedMonitoringServer struct {
 }
 
-func (UnimplementedMonitoringServerServer) GetNodes(context.Context, *GetNodesParams) (*NodesInfo, error) {
+func (UnimplementedMonitoringServer) GetNodes(context.Context, *GetNodesRequest) (*GetNodesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetNodes not implemented")
 }
-func (UnimplementedMonitoringServerServer) RegisterNodes(context.Context, *NodesInfo) (*types.Result, error) {
+func (UnimplementedMonitoringServer) RegisterNodes(context.Context, *RegisterNodesRequest) (*RegisterNodesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RegisterNodes not implemented")
 }
-func (UnimplementedMonitoringServerServer) mustEmbedUnimplementedMonitoringServerServer() {}
+func (UnimplementedMonitoringServer) mustEmbedUnimplementedMonitoringServer() {}
 
-// UnsafeMonitoringServerServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to MonitoringServerServer will
+// UnsafeMonitoringServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to MonitoringServer will
 // result in compilation errors.
-type UnsafeMonitoringServerServer interface {
-	mustEmbedUnimplementedMonitoringServerServer()
+type UnsafeMonitoringServer interface {
+	mustEmbedUnimplementedMonitoringServer()
 }
 
-func RegisterMonitoringServerServer(s grpc.ServiceRegistrar, srv MonitoringServerServer) {
-	s.RegisterService(&_MonitoringServer_serviceDesc, srv)
+func RegisterMonitoringServer(s grpc.ServiceRegistrar, srv MonitoringServer) {
+	s.RegisterService(&Monitoring_ServiceDesc, srv)
 }
 
-func _MonitoringServer_GetNodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetNodesParams)
+func _Monitoring_GetNodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetNodesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MonitoringServerServer).GetNodes(ctx, in)
+		return srv.(MonitoringServer).GetNodes(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/acar.MonitoringServer/GetNodes",
+		FullMethod: "/acar.Monitoring/GetNodes",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MonitoringServerServer).GetNodes(ctx, req.(*GetNodesParams))
+		return srv.(MonitoringServer).GetNodes(ctx, req.(*GetNodesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _MonitoringServer_RegisterNodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(NodesInfo)
+func _Monitoring_RegisterNodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RegisterNodesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MonitoringServerServer).RegisterNodes(ctx, in)
+		return srv.(MonitoringServer).RegisterNodes(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/acar.MonitoringServer/RegisterNodes",
+		FullMethod: "/acar.Monitoring/RegisterNodes",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MonitoringServerServer).RegisterNodes(ctx, req.(*NodesInfo))
+		return srv.(MonitoringServer).RegisterNodes(ctx, req.(*RegisterNodesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-var _MonitoringServer_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "acar.MonitoringServer",
-	HandlerType: (*MonitoringServerServer)(nil),
+// Monitoring_ServiceDesc is the grpc.ServiceDesc for Monitoring service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var Monitoring_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "acar.Monitoring",
+	HandlerType: (*MonitoringServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "GetNodes",
-			Handler:    _MonitoringServer_GetNodes_Handler,
+			Handler:    _Monitoring_GetNodes_Handler,
 		},
 		{
 			MethodName: "RegisterNodes",
-			Handler:    _MonitoringServer_RegisterNodes_Handler,
+			Handler:    _Monitoring_RegisterNodes_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
