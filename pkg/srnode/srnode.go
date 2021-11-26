@@ -35,6 +35,7 @@ func GatherMetricsBySNMP() ([]*api.Node, error) {
 
 	mutex := &sync.Mutex{}
 	for _, ni := range Config.NetworkInterfaces {
+		ni := ni
 		eg.Go(func() error {
 			return func(ni *NetworkInterface) error {
 				sc := newSNMPClient(Config.Addr, Config.Port, Config.SNMPUser, Config.SNMPAuthPass, Config.SNMPPrivPass)
