@@ -36,7 +36,7 @@ builds:
   - CGO_ENABLED=0
 
 - id: "acar-monitoring-server"
-  dir: ./cmd/monitoring-server
+  dir: ./cmd/monitoring
   binary: monitoring-server
   goos:
   - linux

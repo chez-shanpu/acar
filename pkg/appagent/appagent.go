@@ -3,157 +3,131 @@ package appagent
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/RyanCarrier/dijkstra"
 	"github.com/chez-shanpu/acar/api"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
+	"github.com/chez-shanpu/acar/pkg/grpc"
 )
 
-const significantDigits = 100000
-const startVertexName = "start"
-const ratioMetricsTypeOption = "ratio"
-const bytesMetricsTypeOption = "bytes"
-const infCost = 999999
-const byteToBit = 8
+const (
+	startVertexName        = "start"
+	ratioMetricsTypeOption = "ratio"
+	bytesMetricsTypeOption = "bytes"
+	infCost                = 999999
+	byteToBit              = 8.0
+)
 
-func GetSRNodesInfo(tls bool, certFilePath, mntAddr string) (*api.NodesInfo, error) {
-	var opts []grpc.DialOption
-	if tls {
-		if certFilePath == "" {
-			return nil, fmt.Errorf("dp-cert file path is not set")
-		}
-		creds, err := credentials.NewClientTLSFromFile(certFilePath, "")
-		if err != nil {
-			return nil, fmt.Errorf("failed to create TLS credentials %v", err)
-		}
-		opts = append(opts, grpc.WithTransportCredentials(creds))
-	} else {
-		opts = append(opts, grpc.WithInsecure())
-	}
-	opts = append(opts, grpc.WithBlock())
-	conn, err := grpc.Dial(mntAddr, opts...)
+func GetSRNodesInfo() ([]*api.Node, error) {
+	conn, err := grpc.MakeConn(Config.MonitoringAddr, Config.MonitoringTLS, Config.MonitoringCert)
 	if err != nil {
-		return nil, fmt.Errorf("did not connect: %v", err)
+		return nil, err
 	}
 	defer conn.Close()
 
-	c := api.NewMonitoringServerClient(conn)
-
+	c := api.NewMonitoringClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	nodesInfo, err := c.GetNodes(ctx, &api.GetNodesParams{})
+	res, err := c.GetNodes(ctx, &api.GetNodesRequest{})
 	if err != nil {
-		return nil, fmt.Errorf("RegisterSRPolicy(): %v", err)
+		return nil, err
 	}
-	return nodesInfo, nil
+	return res.GetNodes(), nil
 }
 
-func MakeGraph(nodesInfo *api.NodesInfo, metricsType string, require float64) (*dijkstra.Graph, error) {
-	var cost int64
+func MakeGraph(nodes []*api.Node) (*dijkstra.Graph, error) {
 	graph := dijkstra.NewGraph()
-	for _, node := range nodesInfo.Nodes {
+	for _, node := range nodes {
 		graph.AddMappedVertex(node.SID)
-		if metricsType == ratioMetricsTypeOption {
-			if require <= (100 - node.LinkUsageRatio) {
-				cost = 1
-			} else {
-				cost = infCost
-			}
-		} else if metricsType == bytesMetricsTypeOption {
-			if int64(require) <= (node.LinkCap - int64(node.LinkUsageBytes*byteToBit)) {
-				cost = 1
-			} else {
-				cost = infCost
-			}
-		} else {
-			return nil, fmt.Errorf("metrics option is wrong (metrics=%s)", metricsType)
+		cost, err := makeCost(node)
+		if err != nil {
+			return nil, err
 		}
+
 		for _, ns := range node.NextSids {
-			log.Printf("sid: %s, next_sid: %s, cost: %d \n", node.SID, ns, cost)
-			err := graph.AddMappedArc(node.SID, ns, cost)
-			if err != nil {
-				return nil, fmt.Errorf("graph.AddMappedArc was failed: %v", err)
+			if err = graph.AddMappedArc(node.SID, ns, cost); err != nil {
+				return nil, err
 			}
 		}
 	}
 	return graph, nil
 }
 
-func MakeSIDList(graph *dijkstra.Graph, depSids []string, dstSid string) (*[]string, error) {
-	dstSidIndex, err := graph.GetMapping(dstSid)
+func MakeSIDList(g *dijkstra.Graph) ([]string, error) {
+	best, err := calcPath(g, Config.DepSIDs, Config.DstSID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to graph.GetMapping with destination address (Is your `dst-sid` correct?): %v", err)
+		return nil, err
 	}
-
-	startID := graph.AddMappedVertex(startVertexName)
-	for _, depSid := range depSids {
-		err = graph.AddMappedArc(startVertexName, depSid, 0)
-		if err != nil {
-			return nil, fmt.Errorf("graph.AddMappedArc was failed: %v", err)
-		}
-	}
-
-	best, err := graph.Shortest(startID, dstSidIndex)
-	if err != nil {
-		return nil, fmt.Errorf("failed to searching shortest path: %v", err)
-	}
-	// if there is no best path, it returns nil
-	if best.Distance >= infCost {
-		fmt.Printf("[INFO] There is no best path. cost: %v \n", best.Distance)
-		return nil, nil
-	}
-
-	var sids []string
-	for _, verIndex := range best.Path {
-		sid, _ := graph.GetMapped(verIndex)
-		if sid != startVertexName {
-			sids = append(sids, sid)
-		}
-	}
-	if sids == nil {
-		return nil, fmt.Errorf("something wrong with calc route: sid list is empth")
-	}
-	return &sids, nil
+	return constructSIDList(g, best), nil
 }
 
-func SendSRInfoToControlPlane(sidList *[]string, tls bool, certFilePath, cpAddr, appName, srcAddr, dstAddr string) error {
-	var opts []grpc.DialOption
-	if tls {
-		if certFilePath == "" {
-			return fmt.Errorf("dp-cert file path is not set")
-		}
-		creds, err := credentials.NewClientTLSFromFile(certFilePath, "")
-		if err != nil {
-			return fmt.Errorf("failed to create TLS credentials %v", err)
-		}
-		opts = append(opts, grpc.WithTransportCredentials(creds))
-	} else {
-		opts = append(opts, grpc.WithInsecure())
-	}
-	opts = append(opts, grpc.WithBlock())
-	conn, err := grpc.Dial(cpAddr, opts...)
+func SendSRInfoToControlPlane(sidList []string) error {
+	conn, err := grpc.MakeConn(Config.ControlplaneAddr, Config.ControlplaneTLS, Config.ControlplaneCert)
 	if err != nil {
-		return fmt.Errorf("did not connect: %v", err)
+		return err
 	}
 	defer conn.Close()
 
 	c := api.NewControlPlaneClient(conn)
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	_, err = c.RegisterSRPolicy(ctx, &api.AppInfo{
-		AppName: appName,
-		SrcAddr: srcAddr,
-		DstAddr: dstAddr,
-		SidList: *sidList,
-	})
-	if err != nil {
-		return fmt.Errorf("RegisterSRPolicy(): %v", err)
+	ai := &api.AppInfo{
+		AppName: Config.AppName,
+		SrcAddr: Config.SrcAddr,
+		DstAddr: Config.DstAddr,
+		SidList: sidList,
 	}
-	return nil
+	_, err = c.RegisterSRPolicy(ctx, &api.RegisterSRPolicyRequest{AppInfo: ai})
+	return err
+}
+
+func makeCost(node *api.Node) (int64, error) {
+	cost := int64(0)
+
+	switch Config.MetricsType {
+	case ratioMetricsTypeOption:
+		if Config.RequireValue <= (100 - node.LinkUsageRatio) {
+			cost = 1
+		} else {
+			cost = infCost
+		}
+	case bytesMetricsTypeOption:
+		if Config.RequireValue <= (float64(node.LinkCap)-node.LinkUsageBytes)*byteToBit {
+			cost = 1
+		} else {
+			cost = infCost
+		}
+	default:
+		return 0, fmt.Errorf("metrics type is wrong: %s", Config.MetricsType)
+	}
+	return cost, nil
+}
+
+func calcPath(g *dijkstra.Graph, deps []string, dst string) (*dijkstra.BestPath, error) {
+	dstSidIndex, err := g.GetMapping(dst)
+	if err != nil {
+		return nil, err
+	}
+	startID := g.AddMappedVertex(startVertexName)
+	for _, dep := range deps {
+		if err = g.AddMappedArc(startVertexName, dep, 0); err != nil {
+			return nil, err
+		}
+	}
+	best, err := g.Shortest(startID, dstSidIndex)
+	return &best, err
+}
+
+func constructSIDList(g *dijkstra.Graph, b *dijkstra.BestPath) []string {
+	var sids []string
+
+	for _, verIndex := range b.Path {
+		sid, _ := g.GetMapped(verIndex)
+		if sid != startVertexName {
+			sids = append(sids, sid)
+		}
+	}
+	return sids
 }

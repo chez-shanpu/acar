@@ -4,16 +4,24 @@ package acar;
 
 option go_package = "github.com/chez-shanpu/acar/api";
 
-import "types/result.proto";
+import "google/protobuf/timestamp.proto";
 
 service ControlPlane{
-  rpc RegisterSRPolicy(AppInfo) returns (types.Result);
+  rpc RegisterSRPolicy(RegisterSRPolicyRequest) returns (RegisterSRPolicyResponse);
+}
+
+message RegisterSRPolicyRequest {
+  AppInfo app_info = 1;
+}
+
+message RegisterSRPolicyResponse {
+  google.protobuf.Timestamp time = 1;
 }
 
 message AppInfo {
   string app_name = 1;
   string src_addr = 2;
-  string dst_addr=3;
-  repeated string sid_list=4;
+  string dst_addr = 3;
+  repeated string sid_list = 4;
 }
 
