@@ -35,9 +35,9 @@ builds:
   env:
   - CGO_ENABLED=0
 
-- id: "acar-monitoring-server"
+- id: "acar-monitoring"
   dir: ./cmd/monitoring
-  binary: monitoring-server
+  binary: monitoring
   goos:
   - linux
   goarch:

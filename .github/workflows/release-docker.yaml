@@ -61,15 +61,15 @@ jobs:
           ghcr.io/${{ github.repository_owner }}/acar/dataplane:stable
           ghcr.io/${{ github.repository_owner }}/acar/dataplane:${{ steps.prep.outputs.version }}
 
-    - name: Build and push monitoring-server
+    - name: Build and push monitoring
       uses: docker/build-push-action@v2
       with:
         context: ./
-        file: docker/monitoring-server.Dockerfile
+        file: docker/monitoring.Dockerfile
         push: true
         tags: |
-          ghcr.io/${{ github.repository_owner }}/acar/monitoring-server:stable
-          ghcr.io/${{ github.repository_owner }}/acar/monitoring-server:${{ steps.prep.outputs.version }}
+          ghcr.io/${{ github.repository_owner }}/acar/monitoring:stable
+          ghcr.io/${{ github.repository_owner }}/acar/monitoring:${{ steps.prep.outputs.version }}
 
     - name: Build and push srnode-agent
       uses: docker/build-push-action@v2

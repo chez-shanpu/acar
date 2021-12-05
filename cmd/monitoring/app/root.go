@@ -43,7 +43,7 @@ func init() {
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "monitoring-server",
+	Use:   "monitoring",
 	Short: "acar monitoring server",
 	Version: fmt.Sprintf("acar monitoring server Version: %s (Revision: %s / GoVersion: %s / Compiler: %s)\n",
 		Version, Revision, GoVersion, Compiler),

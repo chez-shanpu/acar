@@ -51,14 +51,14 @@ jobs:
         tags: |
           ghcr.io/${{ github.repository_owner }}/acar/dataplane:latest
 
-    - name: Build and push monitoring-server
+    - name: Build and push monitoring
       uses: docker/build-push-action@v2
       with:
         context: ./
-        file: docker/monitoring-server.Dockerfile
+        file: docker/monitoring.Dockerfile
         push: true
         tags: |
-          ghcr.io/${{ github.repository_owner }}/acar/monitoring-server:latest
+          ghcr.io/${{ github.repository_owner }}/acar/monitoring:latest
 
     - name: Build and push srnode-agent
       uses: docker/build-push-action@v2
