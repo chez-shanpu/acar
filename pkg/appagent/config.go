@@ -10,6 +10,7 @@ const (
 	DepSID           = "dep-sid"
 	DstAddr          = "dst-addr"
 	DstSID           = "dst-sid"
+	Interval         = "interval"
 	Metrics          = "metrics"
 	MonitoringAddr   = "mnt-addr"
 	MonitoringCert   = "mnt-cert"
@@ -26,6 +27,7 @@ type DaemonConfig struct {
 	DepSIDs          []string
 	DstAddr          string
 	DstSID           string
+	Interval         int
 	MetricsType      string
 	MonitoringAddr   string
 	MonitoringCert   string
@@ -44,6 +46,7 @@ func (c *DaemonConfig) Populate() {
 	c.DepSIDs = viper.GetStringSlice(DepSID)
 	c.DstAddr = viper.GetString(DstAddr)
 	c.DstSID = viper.GetString(DstSID)
+	c.Interval = viper.GetInt(Interval)
 	c.MetricsType = viper.GetString(Metrics)
 	c.MonitoringAddr = viper.GetString(MonitoringAddr)
 	c.MonitoringCert = viper.GetString(MonitoringCert)

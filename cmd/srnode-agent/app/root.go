@@ -3,8 +3,11 @@ package app
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"runtime"
+	"syscall"
+	"time"
 
 	"github.com/chez-shanpu/acar/pkg/srnode"
 
@@ -78,9 +81,35 @@ var rootCmd = &cobra.Command{
 	Short: "acar SRNode Agent",
 	Version: fmt.Sprintf("acar srnode agent Version: %s (Revision: %s / GoVersion: %s / Compiler: %s)\n",
 		Version, Revision, GoVersion, Compiler),
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
 		srnode.Config.Populate()
-		return run()
+
+		sigs := make(chan os.Signal, 1)
+		signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+		defer func() {
+			signal.Stop(sigs)
+		}()
+
+		errCh := make(chan error, 1)
+		ticker := time.NewTicker(time.Duration(srnode.Config.Interval) * time.Second)
+		go func() {
+			for {
+				select {
+				case <-ticker.C:
+					if err := run(); err != nil {
+						errCh <- err
+						return
+					}
+				}
+			}
+		}()
+
+		select {
+		case sig := <-sigs:
+			fmt.Printf("Finished with the signal: %v", sig)
+		case err := <-errCh:
+			fmt.Printf("[ERROR]: %v", err)
+		}
 	},
 }
 
