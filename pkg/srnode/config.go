@@ -39,5 +39,5 @@ func (c *DaemonConfig) Populate() {
 	c.SNMPUser = viper.GetString(SNMPUser)
 	c.TLS = viper.GetBool(TLS)
 	c.TLSCert = viper.GetString(TLSCert)
-	_ = viper.Unmarshal(&c.NetworkInterfaces)
+	_ = viper.Unmarshal(c)
 }
