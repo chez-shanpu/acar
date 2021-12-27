@@ -27,8 +27,6 @@ var (
 )
 
 func init() {
-	cobra.OnInitialize(initConfig)
-
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.acar/srnode-agent.yaml)")
 
 	// flags
@@ -52,6 +50,8 @@ func init() {
 	_ = rootCmd.MarkFlagRequired(srnode.SNMPAuthPass)
 	_ = rootCmd.MarkFlagRequired(srnode.SNMPPrivPass)
 	_ = rootCmd.MarkFlagRequired(srnode.SNMPUser)
+
+	cobra.OnInitialize(initConfig)
 }
 
 func initConfig() {
