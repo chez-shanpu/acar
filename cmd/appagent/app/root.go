@@ -3,6 +3,7 @@ package app
 import (
 	"crypto/rand"
 	"fmt"
+	"log"
 	"math"
 	"math/big"
 	"os"
@@ -110,7 +111,7 @@ func Execute() {
 
 func run() error {
 	if isLazy() {
-		fmt.Println("Lazy")
+		log.Println("Lazy")
 		return nil
 	}
 
@@ -127,6 +128,10 @@ func run() error {
 	list, err := appagent.MakeSIDList(graph)
 	if err != nil {
 		return err
+	}
+	if list == nil {
+		log.Println("No best path")
+		return nil
 	}
 
 	return appagent.SendSRInfoToControlPlane(list)
