@@ -35,6 +35,8 @@ func init() {
 	// flags
 	flags := rootCmd.Flags()
 	flags.String(srnode.Addr, "localhost", "SRNode address")
+	flags.Int(srnode.ConcurrentNum, 1, "number of gathering metrics process")
+	flags.Float64(srnode.ConcurrentInterval, 1, "seconds between metrics processes")
 	flags.Int(srnode.Interval, 60, "measurement interval when measuring the interface usage rate (sec)")
 	flags.String(srnode.MonitoringAddr, "localhost", "monitoring server address")
 	flags.Uint16(srnode.Port, 161, "SRNode snmp port num")
@@ -91,18 +93,21 @@ var rootCmd = &cobra.Command{
 		}()
 
 		errCh := make(chan error, 1)
-		ticker := time.NewTicker(time.Duration(srnode.Config.Interval) * time.Second)
-		go func() {
-			for {
-				select {
-				case <-ticker.C:
-					if err := run(); err != nil {
-						errCh <- err
-						return
+		for i := 0; i < srnode.Config.ConcurrentNum; i++ {
+			ticker := time.NewTicker(time.Duration(srnode.Config.Interval) * time.Second)
+			go func() {
+				for {
+					select {
+					case <-ticker.C:
+						if err := run(); err != nil {
+							errCh <- err
+							return
+						}
 					}
 				}
-			}
-		}()
+			}()
+			time.Sleep(time.Duration(srnode.Config.ConcurrentInterval) * time.Second)
+		}
 
 		select {
 		case sig := <-sigs:
