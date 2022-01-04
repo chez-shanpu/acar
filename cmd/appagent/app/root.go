@@ -1,7 +1,10 @@
 package app
 
 import (
+	"crypto/rand"
 	"fmt"
+	"math"
+	"math/big"
 	"os"
 	"os/signal"
 	"runtime"
@@ -36,6 +39,7 @@ func init() {
 	flags.String(appagent.DstAddr, "", "destination address")
 	flags.String(appagent.DstSID, "", "the sid of the destination")
 	flags.Int(appagent.Interval, 1, "calculation interval (sec)")
+	flags.Float64(appagent.Lazy, 0, "lazy probability (float 0 to 1)")
 	flags.StringP(appagent.Metrics, "", "bytes", "what metrics uses for make a graph ('ratio' and 'bytes' is now supported and default is 'bytes')")
 	flags.String(appagent.MonitoringAddr, "localhost", "monitoring server address")
 	flags.String(appagent.MonitoringCert, "", "path to monitoring server cert file (this option is enabled when tls flag is true)")
@@ -105,6 +109,11 @@ func Execute() {
 }
 
 func run() error {
+	if isLazy() {
+		fmt.Println("Lazy")
+		return nil
+	}
+
 	nodes, err := appagent.GetSRNodesInfo()
 	if err != nil {
 		return err
@@ -121,4 +130,24 @@ func run() error {
 	}
 
 	return appagent.SendSRInfoToControlPlane(list)
+}
+
+func isLazy() bool {
+	if appagent.Config.Lazy > randFloat() {
+		return true
+	} else {
+		return false
+	}
+}
+func randFloat() float64 {
+	a, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
+	if err != nil {
+		panic(err)
+	}
+again:
+	f := float64(a.Int64()) / (1 << 63)
+	if f == 1 {
+		goto again
+	}
+	return f
 }
