@@ -61,6 +61,10 @@ func MakeSIDList(g *dijkstra.Graph) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	if best.Distance >= infCost {
+		return nil, nil
+	}
+
 	return constructSIDList(g, best), nil
 }
 
