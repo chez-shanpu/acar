@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/RyanCarrier/dijkstra"
 	"github.com/chez-shanpu/acar/api"
 	"github.com/chez-shanpu/acar/pkg/grpc"
@@ -99,6 +101,11 @@ func makeCost(node *api.Node) (int64, error) {
 		} else {
 			cost = infCost
 		}
+		log.WithFields(logrus.Fields{
+			"Node":    fmt.Sprintf("%#v", node),
+			"require": Config.RequireValue,
+			"cost":    cost,
+		}).Info("node cost is calculated by bytes metrics")
 	default:
 		return 0, fmt.Errorf("metrics type is wrong: %s", Config.MetricsType)
 	}
