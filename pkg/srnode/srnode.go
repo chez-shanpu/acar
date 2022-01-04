@@ -196,7 +196,7 @@ func getInterfaceUsageBySNMP(snmp *gosnmp.GoSNMP, ifIndex, secInterval int, link
 
 	// calcurate
 	dur := secondGetTime.Sub(firstGetTime).Seconds()
-	ifUsageRatio, ifUsageBytes := calcInterfaceUsage(firstUsageBytesMetric, secondUsageBytesMetric, dur, linkCap*MegaBitsToBits)
+	ifUsageRatio, ifUsageBytes := calcInterfaceUsage(firstUsageBytesMetric, secondUsageBytesMetric, dur, linkCap)
 
 	return ifUsageRatio, ifUsageBytes, nil
 }
