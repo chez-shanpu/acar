@@ -11,6 +11,7 @@ const (
 	DstAddr          = "dst-addr"
 	DstSID           = "dst-sid"
 	Interval         = "interval"
+	Lazy             = "lazy"
 	Metrics          = "metrics"
 	MonitoringAddr   = "mnt-addr"
 	MonitoringCert   = "mnt-cert"
@@ -28,6 +29,7 @@ type DaemonConfig struct {
 	DstAddr          string
 	DstSID           string
 	Interval         int
+	Lazy             float64
 	MetricsType      string
 	MonitoringAddr   string
 	MonitoringCert   string
@@ -47,6 +49,7 @@ func (c *DaemonConfig) Populate() {
 	c.DstAddr = viper.GetString(DstAddr)
 	c.DstSID = viper.GetString(DstSID)
 	c.Interval = viper.GetInt(Interval)
+	c.Lazy = viper.GetFloat64(Lazy)
 	c.MetricsType = viper.GetString(Metrics)
 	c.MonitoringAddr = viper.GetString(MonitoringAddr)
 	c.MonitoringCert = viper.GetString(MonitoringCert)
