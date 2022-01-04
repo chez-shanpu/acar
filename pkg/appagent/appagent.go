@@ -94,7 +94,7 @@ func makeCost(node *api.Node) (int64, error) {
 			cost = infCost
 		}
 	case bytesMetricsTypeOption:
-		if Config.RequireValue <= (float64(node.LinkCap)-node.LinkUsageBytes)*byteToBit {
+		if Config.RequireValue <= float64(node.LinkCap)-node.LinkUsageBytes*byteToBit {
 			cost = 1
 		} else {
 			cost = infCost
